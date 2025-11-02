@@ -54,7 +54,7 @@ class Context:
             recipients=[self.message.recipient()],
             number=self._phone_number,
             quote_author=self.message.source,
-            quote_message=self.message.text,
+            quote_message=self.message.message,
             quote_timestamp=self.message.timestamp,
             base64_attachments=base64_attachments or [],
             mentions=mentions,

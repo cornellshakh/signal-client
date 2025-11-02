@@ -50,6 +50,48 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## Local Development
+
+To contribute to this project, follow these steps to set up your local development environment.
+
+### Prerequisites
+
+-   [Poetry](https://python-poetry.org/) for dependency management.
+-   [pre-commit](https://pre-commit.com/) for code quality checks.
+
+### Setup
+
+1.  **Clone the repository:**
+
+    ```bash
+    git clone https://github.com/cornellshakh/signal_client.git
+    cd signal_client
+    ```
+
+2.  **Install dependencies:**
+
+    Poetry will create a virtual environment and install all the required dependencies, including development tools.
+
+    ```bash
+    poetry install
+    ```
+
+3.  **Set up pre-commit hooks:**
+
+    This will run linting and formatting checks automatically before each commit.
+
+    ```bash
+    poetry run pre-commit install
+    ```
+
+### Running Tests
+
+To run the test suite, use the following command:
+
+```bash
+poetry run pytest
+```
+
 ## Full Documentation
 
 For a complete guide to the library's architecture, core concepts, and a full API reference, please see our **[Comprehensive Documentation](./docs/README.md)**.

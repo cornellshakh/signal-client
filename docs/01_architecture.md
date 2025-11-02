@@ -92,3 +92,4 @@ The library is built around a few core components that work together to receive,
 
 - **File:** `signal_client/infrastructure/api_service.py`
 - **Responsibility:** This service provides a client for interacting with the Signal REST API. It is used by the `Context` object to perform actions like sending messages, adding reactions, and setting typing indicators. It handles the low-level details of making authenticated HTTP requests to the Signal service.
+

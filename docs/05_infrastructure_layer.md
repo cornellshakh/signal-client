@@ -21,3 +21,5 @@ The `infrastructure` layer is responsible for all communication with external sy
 ### `storage/` (Directory)
 
 - **Purpose:** This directory contains the concrete implementations for different storage backends, such as Redis (`redis.py`) or SQLite (`sqlite.py`). The `StorageService` uses a class from this directory to perform the actual data persistence, allowing the library to be configured with different storage options.
+
+  - `base.py`: Defines the abstract base class (ABC) for storage implementations. This ensures that all storage providers adhere to a common interface.

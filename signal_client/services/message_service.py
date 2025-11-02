@@ -90,4 +90,18 @@ class MessageService:
                 "targetSentTimestamp"
             )
 
+        if "attachments" in data_message:
+            data_message["attachments_local_filenames"] = [
+                attachment["filename"]
+                for attachment in data_message["attachments"]
+                if "filename" in attachment
+            ]
+
+        if "mentions" in data_message:
+            data_message["mentions"] = [
+                mention["number"]
+                for mention in data_message["mentions"]
+                if "number" in mention
+            ]
+
         return Message.model_validate(data_message)

@@ -102,3 +102,11 @@ Displays a typing indicator in the chat.
 #### `async def stop_typing(self) -> None`
 
 Hides the typing indicator.
+
+---
+
+## `CommandError` (Exception)
+
+A custom exception that can be raised within a command's `handle` method to indicate a user-facing error.
+
+- **Source:** `signal_client/command.py`

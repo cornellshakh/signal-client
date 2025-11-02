@@ -154,3 +154,40 @@ def test_parse_message_group_message(message_service: MessageService):
     assert message.group == "some-group-id"
     assert message.is_group() is True
     assert message.is_private() is False
+
+def test_parse_message_attachment(message_service: MessageService):
+    raw_message = {
+        "envelope": {
+            "source": "+1234567890",
+            "timestamp": 1672531205000,
+            "dataMessage": {
+                "message": "Hello, attachment!",
+                "attachments": [{"filename": "test.txt"}],
+            },
+        }
+    }
+    raw_message_str = json.dumps(raw_message)
+
+    message = message_service._parse_message(raw_message_str)
+
+    assert message is not None
+    assert message.attachments_local_filenames == ["test.txt"]
+
+
+def test_parse_message_mention(message_service: MessageService):
+    raw_message = {
+        "envelope": {
+            "source": "+1234567890",
+            "timestamp": 1672531206000,
+            "dataMessage": {
+                "message": "Hello, @+0987654321!",
+                "mentions": [{"number": "+0987654321"}],
+            },
+        }
+    }
+    raw_message_str = json.dumps(raw_message)
+
+    message = message_service._parse_message(raw_message_str)
+
+    assert message is not None
+    assert message.mentions == ["+0987654321"]

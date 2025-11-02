@@ -60,8 +60,8 @@ To contribute to this project, follow these steps to set up your local developme
 
 ### Prerequisites
 
--   [Poetry](https://python-poetry.org/) for dependency management.
--   [pre-commit](https://pre-commit.com/) for code quality checks.
+- [Poetry](https://python-poetry.org/) for dependency management.
+- [pre-commit](https://pre-commit.com/) for code quality checks.
 
 ### Setup
 

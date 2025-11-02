@@ -8,10 +8,21 @@ readme = "README.md"
 repository = "https://github.com/cornellshakh/signal_client"
 keywords = ["Signal", "Bot", "Framework"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Framework :: AsyncIO",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/cornellshakh/signal_client/issues"
+"Documentation" = "https://github.com/cornellshakh/signal_client#readme"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
@@ -34,6 +45,7 @@ pytest = ">=8.3.2"
 pytest-asyncio = ">=0.23.8"
 pytest-mock = ">=3.14.0"
 aresponses = ">=3.0.0"
+twine = "^6.2.0"
 
 [tool.poetry.extras]
 redis = ["redis"]

@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 class SignalClient:
     def __init__(
-        self, config: dict | None = None, container: Container | None = None
+        self,
+        config: dict | None = None,
+        container: Container | None = None,
     ) -> None:
         if container is None:
             container = Container()

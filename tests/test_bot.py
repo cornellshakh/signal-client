@@ -1,5 +1,6 @@
 import asyncio
-from typing import ClassVar
+from typing import ClassVar, cast
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -23,9 +24,10 @@ async def send_message(bot: SignalClient, text: str):
 
 def assert_sent(bot: SignalClient, text: str):
     """Helper to assert that a message was sent by the bot."""
-    (request,) = bot.container.api_service().messages.send.call_args.args
-    assert request.message == text
-    assert request.number == bot.container.config.phone_number()
+    send_mock = cast("MagicMock", bot.container.api_service().messages.send)
+    (request,) = send_mock.call_args.args
+    assert request["message"] == text
+    assert request["number"] == bot.container.config.phone_number()
 
 
 @pytest.mark.asyncio

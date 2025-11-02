@@ -7,7 +7,7 @@ from .base import Storage, StorageError
 
 
 class SQLiteStorage(Storage):
-    def __init__(self, database: str = ":memory:", **kwargs: object) -> None:
+    def __init__(self, database: str = ":memory:", **kwargs: Any) -> None:  # noqa: ANN401
         self._database = database
         self._kwargs = kwargs
         self._db: aiosqlite.Connection | None = None

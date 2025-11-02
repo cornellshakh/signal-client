@@ -38,7 +38,7 @@ class Context:
             mentions=mentions,
             view_once=view_once,
         )
-        await self._api_service.messages.send(request)
+        await self._api_service.messages.send(request.model_dump(exclude_none=True))
 
     async def reply(
         self,
@@ -60,7 +60,7 @@ class Context:
             mentions=mentions,
             view_once=view_once,
         )
-        await self._api_service.messages.send(request)
+        await self._api_service.messages.send(request.model_dump(exclude_none=True))
 
     async def react(self, emoji: str) -> None:
         """Add a reaction to the incoming message."""
@@ -73,7 +73,9 @@ class Context:
             request.group = self.message.group
         else:
             request.recipient = self.message.source
-        await self._api_service.reactions.send_reaction(self._phone_number, request)
+        await self._api_service.reactions.send_reaction(
+            self._phone_number, request.model_dump(exclude_none=True)
+        )
 
     async def remove_reaction(self) -> None:
         """Remove a reaction from the incoming message."""
@@ -89,7 +91,9 @@ class Context:
             request.group = self.message.group
         else:
             request.recipient = self.message.source
-        await self._api_service.reactions.remove_reaction(self._phone_number, request)
+        await self._api_service.reactions.remove_reaction(
+            self._phone_number, request.model_dump(exclude_none=True)
+        )
 
     async def start_typing(self) -> None:
         """Show the typing indicator."""
@@ -99,7 +103,7 @@ class Context:
         else:
             request.recipient = self.message.source
         await self._api_service.messages.set_typing_indicator(
-            self._phone_number, request
+            self._phone_number, request.model_dump(exclude_none=True)
         )
 
     async def stop_typing(self) -> None:
@@ -110,5 +114,5 @@ class Context:
         else:
             request.recipient = self.message.source
         await self._api_service.messages.unset_typing_indicator(
-            self._phone_number, request
+            self._phone_number, request.model_dump(exclude_none=True)
         )

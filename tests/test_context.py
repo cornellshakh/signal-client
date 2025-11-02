@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import cast
+from unittest.mock import AsyncMock
+
 import pytest
 
 from signal_client import SignalClient
@@ -27,9 +30,10 @@ async def test_context_send(bot: SignalClient):
     await context.send("hello")
 
     # Assert
-    (request,) = bot.container.api_service().messages.send.call_args.args
-    assert request.message == "hello"
-    assert request.recipients == ["user1"]
+    send_mock = cast("AsyncMock", bot.container.api_service().messages.send)
+    (request,) = send_mock.call_args.args
+    assert request["message"] == "hello"
+    assert request["recipients"] == ["user1"]
 
 
 @pytest.mark.asyncio
@@ -52,9 +56,10 @@ async def test_context_reply(bot: SignalClient):
     await context.reply("hello")
 
     # Assert
-    (request,) = bot.container.api_service().messages.send.call_args.args
-    assert request.message == "hello"
-    assert request.recipients == ["user1"]
-    assert request.quote_author == "user1"
-    assert request.quote_message == "test"
-    assert request.quote_timestamp == 1
+    send_mock = cast("AsyncMock", bot.container.api_service().messages.send)
+    (request,) = send_mock.call_args.args
+    assert request["message"] == "hello"
+    assert request["recipients"] == ["user1"]
+    assert request["quote_author"] == "user1"
+    assert request["quote_message"] == "test"
+    assert request["quote_timestamp"] == 1

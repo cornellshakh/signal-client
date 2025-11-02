@@ -25,4 +25,3 @@ The `domain` layer contains the core data models and business logic of the `sign
 ### `reaction.py`
 
 - **Purpose:** Defines the `Reaction` model. This represents an emoji reaction to a message, linking the emoji to the target message and author.
-

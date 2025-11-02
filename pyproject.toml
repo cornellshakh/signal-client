@@ -36,14 +36,15 @@ dependency-injector = ">=4.41.0"
 aiosqlite = ">=0.20.0"
 structlog = ">=24.1.0"
 
+pytest-asyncio = ">=0.23.8"
+aresponses = ">=3.0.0"
+pytest = ">=8.3.2"
+pytest-mock = ">=3.14.0"
+
 [tool.poetry.group.dev.dependencies]
 black = ">=24.10.0"
 ruff = ">=0.5.0"
 pre-commit = ">=4.0.1"
-pytest = ">=8.3.2"
-pytest-asyncio = ">=0.23.8"
-pytest-mock = ">=3.14.0"
-aresponses = ">=3.0.0"
 twine = "^6.2.0"
 redis = ">=5.2.0"
 

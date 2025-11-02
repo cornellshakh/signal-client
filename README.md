@@ -11,6 +11,10 @@ It is designed to work with the [signal-cli-rest-api](https://github.com/bbernha
 - **Extensible:** Cleanly structured with dependency injection for easy customization.
 - **High-level API:** Simple `Context` object for replying, reacting, and sending messages.
 
+## API Coverage
+
+This library provides **100% coverage** of the `signal-cli-rest-api`. All endpoints are implemented, ensuring that you can access the full functionality of the Signal service.
+
 ## Getting Started
 
 ### Installation

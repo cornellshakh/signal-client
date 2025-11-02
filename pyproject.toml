@@ -85,6 +85,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.semantic_release]
+# Configuration for python-semantic-release
 branch = "main"
 version_variables = [
     "pyproject.toml:tool.poetry.version"

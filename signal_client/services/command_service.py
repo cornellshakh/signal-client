@@ -19,6 +19,7 @@ class CommandService:
         self._api_service = api_service
         self._phone_number = phone_number
         self._commands: list[Command] = []
+        self._stop = asyncio.Event()
 
     def register(self, command: Command) -> None:
         """Register a new command."""
@@ -27,6 +28,10 @@ class CommandService:
     def get_commands(self) -> list[Command]:
         """Return the list of registered commands."""
         return self._commands
+
+    def stop(self) -> None:
+        """Stop the command service."""
+        self._stop.set()
 
     async def process(self, message: Message) -> None:
         """Process a single message."""
@@ -37,12 +42,22 @@ class CommandService:
 
     async def process_messages(self) -> None:
         """Continuously process messages from the queue."""
-        while True:
-            message = await self._queue.get()
-            try:
+        while not self._stop.is_set():
+            get_task = asyncio.create_task(self._queue.get())
+            stop_task = asyncio.create_task(self._stop.wait())
+
+            done, _ = await asyncio.wait(
+                {get_task, stop_task}, return_when=asyncio.FIRST_COMPLETED
+            )
+
+            if get_task in done:
+                message = get_task.result()
                 await self.process(message)
-            finally:
                 self._queue.task_done()
+                stop_task.cancel()
+            else:
+                get_task.cancel()
+                break
 
     def should_trigger(self, command: Command, context: Context) -> bool:
         """Determine if a command should be triggered by a message."""

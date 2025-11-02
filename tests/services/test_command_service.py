@@ -1,6 +1,5 @@
 import asyncio
 import re
-from contextlib import suppress
 from typing import ClassVar
 from unittest.mock import AsyncMock, MagicMock
 
@@ -40,7 +39,8 @@ class TestCommandService:
         command.triggers = ["!test"]
         command.whitelisted = []
         command.case_sensitive = False
-        bot.container.command_service().register(command)
+        command_service = bot.container.command_service()
+        command_service.register(command)
 
         message = Message(
             message="!test",
@@ -52,10 +52,10 @@ class TestCommandService:
         await bot.container.message_queue().put(message)
 
         # Act
-        with suppress(asyncio.TimeoutError):
-            await asyncio.wait_for(
-                bot.container.command_service().process_messages(), timeout=0.1
-            )
+        task = asyncio.create_task(command_service.process_messages())
+        await asyncio.sleep(0.2)  # Allow time for the message to be processed
+        command_service.stop()
+        await task
 
         # Assert
         command.handle.assert_called_once()

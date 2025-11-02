@@ -6,13 +6,13 @@ from typing import Any, cast
 import pytest
 from aresponses.main import ResponsesMockServer
 
-from signal_client.domain.groups import (
+from signal_client.infrastructure.api_clients.groups_client import GroupsClient
+from signal_client.infrastructure.schemas.groups import (
     ChangeGroupAdminsRequest,
     ChangeGroupMembersRequest,
     CreateGroupRequest,
     UpdateGroupRequest,
 )
-from signal_client.infrastructure.api_clients.groups_client import GroupsClient
 
 
 @pytest.mark.asyncio

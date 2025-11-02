@@ -13,7 +13,7 @@ A `Command` is the basic building block of your bot's functionality. It's a piec
 
 A valid `Command` class must have the following attributes and methods:
 
-- `triggers: list[str | re.Pattern]`: A list of strings or compiled regular expression patterns. The `CommandService` will check incoming messages against this list to see if the command should be executed.
+- `triggers: list[str | re.Pattern]`: A list of strings or compiled regular expression patterns. The `Worker` will check incoming messages against this list to see if the command should be executed.
 - `whitelisted: list[str]`: An optional list of user phone numbers or group IDs. If this list is not empty, only messages from these sources will trigger the command.
 - `case_sensitive: bool`: Determines whether the `triggers` should be matched in a case-sensitive manner.
 - `async def handle(self, context: Context) -> None:`: This is the core logic of your command. This asynchronous method is executed when the command is triggered. It receives a `Context` object, which contains all the information about the incoming message and provides methods to respond.

@@ -6,8 +6,8 @@ from typing import Any, cast
 import pytest
 from aresponses.main import ResponsesMockServer
 
-from signal_client.domain.messages import SendMessageRequest
 from signal_client.infrastructure.api_clients.messages_client import MessagesClient
+from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
 
 @pytest.mark.asyncio

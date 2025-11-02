@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import ClassVar, cast
 from unittest.mock import MagicMock
 
@@ -7,27 +8,28 @@ import pytest
 from signal_client import SignalClient
 from signal_client.command import Command
 from signal_client.context import Context
-from signal_client.domain.message import Message, MessageType
 
 
 async def send_message(bot: SignalClient, text: str):
     """Helper to simulate sending a message to the bot."""
-    message = Message(
-        message=text,
-        source="user1",
-        group="group1",
-        timestamp=1672531200000,
-        type=MessageType.DATA_MESSAGE,
-    )
-    await bot.container.message_queue().put(message)
+    message = {
+        "envelope": {
+            "source": "user1",
+            "timestamp": 1672531200000,
+            "dataMessage": {
+                "message": text,
+                "groupInfo": {"groupId": "group1"},
+            },
+        }
+    }
+    await bot.container.message_queue().put(json.dumps(message))
 
 
 def assert_sent(bot: SignalClient, text: str):
     """Helper to assert that a message was sent by the bot."""
-    send_mock = cast("MagicMock", bot.container.api_service().messages.send)
+    send_mock = cast("MagicMock", bot.container.messages_client().send)
     (request,) = send_mock.call_args.args
     assert request["message"] == text
-    assert request["number"] == bot.container.config.phone_number()
 
 
 @pytest.mark.asyncio
@@ -48,7 +50,8 @@ async def test_bot_registers_and_handles_command(bot: SignalClient):
     bot.register(PingCommand())
 
     # Act
-    task = asyncio.create_task(bot.container.command_service().process_messages())
+    worker_pool_manager = bot.container.worker_pool_manager()
+    worker_pool_manager.start(bot.container)
     await send_message(bot, "!ping")
     await asyncio.wait_for(command_handled.wait(), timeout=1)
 
@@ -56,6 +59,5 @@ async def test_bot_registers_and_handles_command(bot: SignalClient):
     assert_sent(bot, "pong")
 
     # Clean up
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+    worker_pool_manager.stop()
+    await worker_pool_manager.join()

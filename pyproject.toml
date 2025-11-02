@@ -19,6 +19,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+packages = [{include = "signal_client", from = "src"}]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/cornellshakh/signal_client/issues"
@@ -51,6 +52,9 @@ ruff = ">=0.5.0"
 pre-commit = ">=4.0.1"
 twine = "^6.2.0"
 redis = ">=5.2.0"
+mypy = ">=1.10.0"
+bandit = ">=1.7.9"
+pytest-cov = ">=5.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -99,3 +103,7 @@ dist_path = "dist/"
 upload_to_pypi = true
 upload_to_release = true
 build_command = "poetry build"
+
+[tool.mypy]
+ignore_missing_imports = true
+explicit_package_bases = true

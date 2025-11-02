@@ -20,3 +20,16 @@ repos:
         language: system
         types: [python]
         require_serial: true
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy
+        language: system
+        types: [python]
+        require_serial: true
+        files: ^(src/|tests/)
+      - id: bandit
+        name: bandit
+        entry: poetry run bandit -c bandit.yaml -r src
+        language: system
+        types: [python]
+        require_serial: true

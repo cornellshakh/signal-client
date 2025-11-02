@@ -9,7 +9,7 @@ import pytest_asyncio
 
 from signal_client import SignalClient
 from signal_client.container import Container
-from signal_client.domain.message import Message
+from signal_client.infrastructure.schemas.message import Message
 
 
 @pytest_asyncio.fixture

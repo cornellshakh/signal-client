@@ -7,7 +7,7 @@ import pytest
 
 from signal_client import SignalClient
 from signal_client.context import Context
-from signal_client.domain.message import Message, MessageType
+from signal_client.infrastructure.schemas.message import Message, MessageType
 
 
 @pytest.mark.asyncio
@@ -20,17 +20,13 @@ async def test_context_send(bot: SignalClient):
         timestamp=1,
         type=MessageType.DATA_MESSAGE,
     )
-    context = Context(
-        message,
-        bot.container.api_service(),
-        bot.container.config.phone_number(),
-    )
+    context = Context(bot.container, message)
 
     # Act
     await context.send("hello")
 
     # Assert
-    send_mock = cast("AsyncMock", bot.container.api_service().messages.send)
+    send_mock = cast("AsyncMock", bot.container.messages_client().send)
     (request,) = send_mock.call_args.args
     assert request["message"] == "hello"
     assert request["recipients"] == ["user1"]
@@ -46,17 +42,13 @@ async def test_context_reply(bot: SignalClient):
         timestamp=1,
         type=MessageType.DATA_MESSAGE,
     )
-    context = Context(
-        message,
-        bot.container.api_service(),
-        bot.container.config.phone_number(),
-    )
+    context = Context(bot.container, message)
 
     # Act
     await context.reply("hello")
 
     # Assert
-    send_mock = cast("AsyncMock", bot.container.api_service().messages.send)
+    send_mock = cast("AsyncMock", bot.container.messages_client().send)
     (request,) = send_mock.call_args.args
     assert request["message"] == "hello"
     assert request["recipients"] == ["user1"]

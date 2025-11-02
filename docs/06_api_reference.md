@@ -19,7 +19,7 @@ Initializes the Signal client.
 
 ### `register(self, command: Command) -> None`
 
-Registers a new command with the bot. The `CommandService` will use this registry to match incoming messages to the appropriate command.
+Registers a new command with the bot. The `WorkerPoolManager` will use this registry to match incoming messages to the appropriate command.
 
 - **Parameters:**
   - `command` (Command): An instance of a class that implements the `Command` protocol.
@@ -105,8 +105,14 @@ Hides the typing indicator.
 
 ---
 
-## `CommandError` (Exception)
+## Exceptions
 
-A custom exception that can be raised within a command's `handle` method to indicate a user-facing error.
+The library provides a set of custom exceptions for handling various error conditions.
 
-- **Source:** `signal_client/command.py`
+- **Source:** `signal_client/domain/exceptions.py`
+
+- `SignalClientError`: The base exception for all library-specific errors.
+- `APIError`: Raised for general API errors.
+- `AuthenticationError`: Raised for authentication failures (401).
+- `NotFoundError`: Raised when a requested resource is not found (404).
+- `ServerError`: Raised for server-side errors (5xx).

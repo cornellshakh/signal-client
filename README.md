@@ -43,6 +43,7 @@ async def main():
     CONFIG = {
         "signal_service": "http://localhost:8080",
         "phone_number": "+1234567890", # Your bot's number
+        "auth_token": "YOUR_AUTH_TOKEN", # Your auth token
     }
     client = SignalClient(CONFIG)
     client.register(PingCommand())

@@ -39,3 +39,14 @@ class SignalClient:
             )
         finally:
             await api_service.close()
+
+    async def shutdown(self) -> None:
+        """Shutdown the bot."""
+        command_service = self.container.command_service()
+        command_service.stop()
+
+        websocket_client = self.container.websocket_client()
+        await websocket_client.close()
+
+        api_service = self.container.api_service()
+        await api_service.close()

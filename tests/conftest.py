@@ -23,4 +23,4 @@ async def bot():
     api_service_mock.messages.send = AsyncMock()
     bot.container.api_service.override(api_service_mock)
     yield bot
-    await bot.container.api_service().close()
+    await bot.shutdown()

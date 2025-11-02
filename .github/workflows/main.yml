@@ -60,7 +60,7 @@ jobs:
           pip install poetry
           poetry install --no-root
       - name: Run tests
-        run: poetry run pytest -vv --durations=0
+        run: poetry run pytest
 
   publish:
     name: "Publish to PyPI"

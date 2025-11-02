@@ -2,7 +2,7 @@ import asyncio
 import re
 from contextlib import suppress
 from typing import ClassVar
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -27,16 +27,19 @@ class MockCommand(Command):
 class TestCommandService:
     def test_register(self, bot: SignalClient) -> None:
         """Test that a command is correctly registered."""
-        command = MockCommand()
-        bot.container.command_service().register(command)
-        assert command in bot.container.command_service().commands
+        command = MagicMock(spec=Command)
+        command_service = bot.container.command_service()
+        command_service.register(command)
+        assert command in command_service._commands
 
     @pytest.mark.asyncio
     async def test_process_messages_calls_handle(self, bot: SignalClient) -> None:
         """Test that process_messages calls the command's handle method."""
         # Arrange
-        command = MockCommand()
+        command = MagicMock(spec=Command)
         command.triggers = ["!test"]
+        command.whitelisted = []
+        command.case_sensitive = False
         bot.container.command_service().register(command)
 
         message = Message(
@@ -46,7 +49,7 @@ class TestCommandService:
             timestamp=1672531200000,
             type=MessageType.DATA_MESSAGE,
         )
-        await bot.container.command_service().queue.put(message)
+        await bot.container.message_queue().put(message)
 
         # Act
         with suppress(asyncio.TimeoutError):
@@ -84,8 +87,9 @@ class TestCommandService:
     ) -> None:
         """Test the _should_trigger method with various inputs."""
         # Arrange
-        command = MockCommand()
+        command = MagicMock(spec=Command)
         command.triggers = [trigger]
+        command.whitelisted = []
         command.case_sensitive = case_sensitive
 
         message = Message(
@@ -109,9 +113,10 @@ class TestCommandService:
     def test_should_trigger_whitelist(self, bot: SignalClient) -> None:
         """Test that the whitelist prevents triggering."""
         # Arrange
-        command = MockCommand()
+        command = MagicMock(spec=Command)
         command.triggers = ["!admin"]
         command.whitelisted = ["admin_user"]
+        command.case_sensitive = False
 
         message_allowed = Message(
             message="!admin",
@@ -152,8 +157,10 @@ class TestCommandService:
     def test_should_not_trigger_on_non_text_message(self, bot: SignalClient) -> None:
         """Test that non-text messages do not trigger commands."""
         # Arrange
-        command = MockCommand()
+        command = MagicMock(spec=Command)
         command.triggers = ["!test"]
+        command.whitelisted = []
+        command.case_sensitive = False
 
         message = Message(
             message=None, source="user1", timestamp=1, type=MessageType.DATA_MESSAGE

@@ -10,9 +10,14 @@ if TYPE_CHECKING:
 
 
 class SignalClient:
-    def __init__(self, config: dict) -> None:
-        self.container = Container()
-        self.container.config.from_dict(config)
+    def __init__(
+        self, config: dict | None = None, container: Container | None = None
+    ) -> None:
+        if container is None:
+            container = Container()
+        self.container = container
+        if config is not None:
+            self.container.config.from_dict(config)
 
     def register(self, command: Command) -> None:
         """Register a new command."""

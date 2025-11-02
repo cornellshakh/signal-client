@@ -221,7 +221,7 @@ files = [
     {file = "async_timeout-5.0.1-py3-none-any.whl", hash = "sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c"},
     {file = "async_timeout-5.0.1.tar.gz", hash = "sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3"},
 ]
-markers = {main = "python_full_version < \"3.11.3\" and (extra == \"redis\" or python_version < \"3.11\")", dev = "python_version < \"3.11\""}
+markers = {main = "python_version < \"3.11\"", dev = "python_full_version < \"3.11.3\""}
 
 [[package]]
 name = "attrs"
@@ -1910,10 +1910,9 @@ md = ["cmarkgfm (>=0.8.0)"]
 name = "redis"
 version = "5.2.1"
 description = "Python client for Redis database and key-value store"
-optional = true
+optional = false
 python-versions = ">=3.8"
-groups = ["main"]
-markers = "extra == \"redis\""
+groups = ["dev"]
 files = [
     {file = "redis-5.2.1-py3-none-any.whl", hash = "sha256:ee7e1056b9aea0f04c6c2ed59452947f34c4940ee025f5dd83e6a6418b6989e4"},
     {file = "redis-5.2.1.tar.gz", hash = "sha256:16f2e22dff21d5125e8481515e386711a34cbec50f0e44413dd7d9c060a54e0f"},
@@ -2147,29 +2146,16 @@ keyring = ["keyring (>=21.2.0)"]
 
 [[package]]
 name = "typing-extensions"
-version = "4.13.0"
-description = "Backported and Experimental Type Hints for Python 3.8+"
-optional = false
-python-versions = ">=3.8"
-groups = ["main", "dev"]
-files = [
-    {file = "typing_extensions-4.13.0-py3-none-any.whl", hash = "sha256:c8dd92cc0d6425a97c18fbb9d1954e5ff92c1ca881a309c45f06ebc0b79058e5"},
-    {file = "typing_extensions-4.13.0.tar.gz", hash = "sha256:0a4ac55a5820789d87e297727d229866c9650f6521b64206413c4fbada24d95b"},
-]
-markers = {main = "python_version >= \"3.12\" or python_version == \"3.9\"", dev = "python_version == \"3.12\" or python_version == \"3.9\""}
-
-[[package]]
-name = "typing-extensions"
 version = "4.15.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
-markers = "python_version >= \"3.10\" and python_version < \"3.12\""
 files = [
     {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
     {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
 ]
+markers = {dev = "python_version < \"3.13\""}
 
 [[package]]
 name = "typing-inspection"
@@ -2453,10 +2439,7 @@ enabler = ["pytest-enabler (>=2.2)"]
 test = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more_itertools", "pytest (>=6,!=8.1.*)", "pytest-ignore-flaky"]
 type = ["pytest-mypy"]
 
-[extras]
-redis = ["redis"]
-
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "acb725057464b3490035b8de6ef542e55e9a2d55b666a8841116a4d6e6e27201"
+content-hash = "b66ba92f0cfd22989b1ca54c94bae514755e7440ac0306c289a91845021fdd94"

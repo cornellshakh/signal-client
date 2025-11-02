@@ -18,11 +18,16 @@ from .api_clients.sticker_packs_client import StickerPacksClient
 
 
 class APIService:
-    def __init__(self, signal_service: str, phone_number: str) -> None:
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        signal_service: str,
+        phone_number: str,
+    ) -> None:
+        self._session = session
         self._signal_service = signal_service
         self._phone_number = phone_number
         self._base_url = f"http://{self._signal_service}"
-        self._session = aiohttp.ClientSession()
 
         self.accounts = AccountsClient(self._session, self._base_url)
         self.attachments = AttachmentsClient(self._session, self._base_url)

@@ -1,12 +1,118 @@
+# ==============================================================================
+# General
+#
+# Files that should be ignored in any project, regardless of language or tools.
+# ==============================================================================
+
+# OS-generated files
+# ------------------
+# Ignore OS-specific files from macOS, Windows, and Linux.
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Secrets and local configuration
+# -------------------------------
+# Ignore sensitive information and local environment configurations.
+# IMPORTANT: Never commit secrets to version control.
+# Use environment variables or a secure secret management system.
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.yml
+*.log
+
+# VSCode
+# ------
+# Ignore VSCode editor-specific files and settings.
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+
+# ==============================================================================
+# Python
+#
+# Python-specific files and directories.
+# Based on the official GitHub Python .gitignore template.
+# https://github.com/github/gitignore/blob/main/Python.gitignore
+# ==============================================================================
+
 # Byte-compiled / optimized / DLL files
+# -------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
 
 # C extensions
+# ------------
 *.so
 
-# Distribution / packaging
+# Virtual environments
+# --------------------
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Test and coverage reports
+# -------------------------
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Type checker caches
+# -------------------
+.mypy_cache/
+.pyre/
+.pytype/
+
+# Linters caches
+# --------------
+.pytest_cache/
+.ruff_cache/
+
+# Notebook checkpoints
+# --------------------
+.ipynb_checkpoints
+
+# ==============================================================================
+# Packaging & Distribution
+#
+# Files related to building and distributing the Python package.
+# ==============================================================================
+
+# Build artifacts
+# ---------------
 .Python
 build/
 develop-eggs/
@@ -28,38 +134,27 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
+# -----------
+# Used for creating standalone executables.
 *.spec
 
 # Installer logs
+# --------------
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-.ruff_cache/
+# ==============================================================================
+# Project Specific
+#
+# Files and directories specific to this project.
+# ==============================================================================
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# VSCode
-.vscode/
-
-# Custom
+# Custom application files
+# ------------------------
 signal-cli-config/
+
+# Documentation build output
+# --------------------------
+# Example for Sphinx or MkDocs. Adjust if you use a different tool.
+site/
+_build/

@@ -1,5 +1,6 @@
 import asyncio
 
+import aiohttp
 from dependency_injector import containers, providers
 
 from .infrastructure.api_service import APIService
@@ -14,8 +15,11 @@ class Container(containers.DeclarativeContainer):
 
     message_queue = providers.Singleton(asyncio.Queue)
 
+    session = providers.Singleton(aiohttp.ClientSession)
+
     api_service = providers.Singleton(
         APIService,
+        session=session,
         signal_service=config.signal_service,
         phone_number=config.phone_number,
     )

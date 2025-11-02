@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.infrastructure.api_clients.sticker_packs_client import (
     StickerPacksClient,
@@ -11,7 +10,7 @@ from signal_client.infrastructure.api_clients.sticker_packs_client import (
 
 @pytest.mark.asyncio
 async def test_get_sticker_packs(
-    sticker_packs_client: StickerPacksClient, aresponses: Any
+    sticker_packs_client: StickerPacksClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     aresponses.add(
@@ -25,7 +24,7 @@ async def test_get_sticker_packs(
 
 @pytest.mark.asyncio
 async def test_add_sticker_pack(
-    sticker_packs_client: StickerPacksClient, aresponses: Any
+    sticker_packs_client: StickerPacksClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     pack_data = {"pack_id": "test_pack"}

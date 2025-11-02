@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.infrastructure.api_clients.search_client import SearchClient
 
 
 @pytest.mark.asyncio
 async def test_search_registered_numbers(
-    search_client: SearchClient, aresponses: Any
+    search_client: SearchClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     numbers_to_search = ["+0987654321"]

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from typing import AsyncGenerator
-from unittest.mock import AsyncMock
-
-import pytest
+from collections.abc import AsyncGenerator
 
 import aiohttp
+import pytest
 import pytest_asyncio
 
 from signal_client import SignalClient

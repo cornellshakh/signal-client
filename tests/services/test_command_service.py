@@ -30,7 +30,7 @@ class TestCommandService:
         command = MagicMock(spec=Command)
         command_service = bot.container.command_service()
         command_service.register(command)
-        assert command in command_service._commands
+        assert command in command_service.get_commands()
 
     @pytest.mark.asyncio
     async def test_process_messages_calls_handle(self, bot: SignalClient) -> None:

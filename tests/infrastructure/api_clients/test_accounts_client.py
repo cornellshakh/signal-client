@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.infrastructure.api_clients.accounts_client import AccountsClient
 
 
 @pytest.mark.asyncio
 async def test_get_accounts(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     aresponses.add(
         "localhost:8080",
@@ -27,7 +26,7 @@ async def test_get_accounts(
 
 @pytest.mark.asyncio
 async def test_set_pin(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     pin_data = {"pin": "1234"}
@@ -42,7 +41,7 @@ async def test_set_pin(
 
 @pytest.mark.asyncio
 async def test_remove_pin(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     aresponses.add(
@@ -56,7 +55,7 @@ async def test_remove_pin(
 
 @pytest.mark.asyncio
 async def test_lift_rate_limit(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     captcha_data = {"captcha": "test"}
@@ -71,7 +70,7 @@ async def test_lift_rate_limit(
 
 @pytest.mark.asyncio
 async def test_update_settings(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     settings_data = {"theme": "dark"}
@@ -86,7 +85,7 @@ async def test_update_settings(
 
 @pytest.mark.asyncio
 async def test_set_username(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     username_data = {"username": "test"}
@@ -101,7 +100,7 @@ async def test_set_username(
 
 @pytest.mark.asyncio
 async def test_remove_username(
-    accounts_client: AccountsClient, aresponses: Any
+    accounts_client: AccountsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     aresponses.add(

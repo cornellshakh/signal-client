@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.infrastructure.api_clients.identities_client import IdentitiesClient
 
 
 @pytest.mark.asyncio
 async def test_get_identities(
-    identities_client: IdentitiesClient, aresponses: Any
+    identities_client: IdentitiesClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     aresponses.add(
@@ -23,7 +22,7 @@ async def test_get_identities(
 
 @pytest.mark.asyncio
 async def test_trust_identity(
-    identities_client: IdentitiesClient, aresponses: Any
+    identities_client: IdentitiesClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     number_to_trust = "+0987654321"

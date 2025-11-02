@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.domain.messages import SendMessageRequest
 from signal_client.infrastructure.api_clients.messages_client import MessagesClient
 
 
 @pytest.mark.asyncio
-async def test_send(messages_client: MessagesClient, aresponses: Any) -> None:
+async def test_send(messages_client: MessagesClient, aresponses: ResponsesMock) -> None:
     request = SendMessageRequest(
         number="+1234567890",
         recipients=["+0987654321"],

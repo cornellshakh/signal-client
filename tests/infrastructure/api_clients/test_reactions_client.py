@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.infrastructure.api_clients.reactions_client import ReactionsClient
 
 
 @pytest.mark.asyncio
 async def test_send_reaction(
-    reactions_client: ReactionsClient, aresponses: Any
+    reactions_client: ReactionsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     reaction_data = {
@@ -28,7 +27,7 @@ async def test_send_reaction(
 
 @pytest.mark.asyncio
 async def test_remove_reaction(
-    reactions_client: ReactionsClient, aresponses: Any
+    reactions_client: ReactionsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     reaction_data = {

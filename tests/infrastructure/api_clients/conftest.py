@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock
+from collections.abc import AsyncGenerator
 
 import aiohttp
 import pytest_asyncio
-
 
 from signal_client.infrastructure.api_clients import (
     AccountsClient,

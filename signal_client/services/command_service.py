@@ -24,6 +24,10 @@ class CommandService:
         """Register a new command."""
         self._commands.append(command)
 
+    def get_commands(self) -> list[Command]:
+        """Return the list of registered commands."""
+        return self._commands
+
     async def process(self, message: Message) -> None:
         """Process a single message."""
         context = Context(message, self._api_service, self._phone_number)

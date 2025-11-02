@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.infrastructure.api_clients.profiles_client import ProfilesClient
 
 
 @pytest.mark.asyncio
 async def test_update_profile(
-    profiles_client: ProfilesClient, aresponses: Any
+    profiles_client: ProfilesClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     profile_data = {"name": "test"}

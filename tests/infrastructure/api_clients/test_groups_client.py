@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
+from aresponses import ResponsesMock
 
 from signal_client.domain.groups import (
     ChangeGroupAdminsRequest,
@@ -15,7 +14,7 @@ from signal_client.infrastructure.api_clients.groups_client import GroupsClient
 
 @pytest.mark.asyncio
 async def test_create_group(
-    groups_client: GroupsClient, aresponses: Any
+    groups_client: GroupsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     request = CreateGroupRequest(name="Test Group", members=[phone_number])
@@ -30,7 +29,7 @@ async def test_create_group(
 
 @pytest.mark.asyncio
 async def test_update_group(
-    groups_client: GroupsClient, aresponses: Any
+    groups_client: GroupsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     group_id = "group_id"
@@ -46,7 +45,7 @@ async def test_update_group(
 
 @pytest.mark.asyncio
 async def test_add_members(
-    groups_client: GroupsClient, aresponses: Any
+    groups_client: GroupsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     group_id = "group_id"
@@ -62,7 +61,7 @@ async def test_add_members(
 
 @pytest.mark.asyncio
 async def test_remove_members(
-    groups_client: GroupsClient, aresponses: Any
+    groups_client: GroupsClient, aresponses: ResponsesMock
 ) -> None:
     phone_number = "+1234567890"
     group_id = "group_id"
@@ -77,7 +76,9 @@ async def test_remove_members(
 
 
 @pytest.mark.asyncio
-async def test_add_admins(groups_client: GroupsClient, aresponses: Any) -> None:
+async def test_add_admins(
+    groups_client: GroupsClient, aresponses: ResponsesMock
+) -> None:
     phone_number = "+1234567890"
     group_id = "group_id"
     request = ChangeGroupAdminsRequest(admins=[phone_number])

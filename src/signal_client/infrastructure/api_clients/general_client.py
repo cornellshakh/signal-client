@@ -21,6 +21,18 @@ class GeneralClient(BaseClient):
         response = await self._make_request("POST", "/v1/configuration", json=data)
         return cast("dict[str, Any]", response)
 
+    async def get_mode(self, phone_number: str) -> dict[str, Any]:
+        """Get the mode of an account."""
+        response = await self._make_request("GET", f"/v1/configuration/{phone_number}")
+        return cast("dict[str, Any]", response)
+
+    async def set_mode(self, phone_number: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Set the mode of an account."""
+        response = await self._make_request(
+            "POST", f"/v1/configuration/{phone_number}", json=data
+        )
+        return cast("dict[str, Any]", response)
+
     async def get_settings(self, phone_number: str) -> dict[str, Any]:
         """List account specific settings."""
         response = await self._make_request(

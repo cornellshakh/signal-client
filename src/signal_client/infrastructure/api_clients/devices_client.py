@@ -20,6 +20,13 @@ class DevicesClient(BaseClient):
         )
         return cast("dict[str, Any]", response)
 
+    async def remove_device(self, phone_number: str, device_id: str) -> dict[str, Any]:
+        """Remove a linked device."""
+        response = await self._make_request(
+            "DELETE", f"/v1/devices/{phone_number}/{device_id}"
+        )
+        return cast("dict[str, Any]", response)
+
     async def get_qrcodelink(self) -> dict[str, Any]:
         """Link device and generate QR code."""
         response = await self._make_request("GET", "/v1/qrcodelink")

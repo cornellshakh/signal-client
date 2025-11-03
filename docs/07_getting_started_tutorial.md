@@ -57,7 +57,6 @@ from commands.ping import PingCommand
 CONFIG = {
     "signal_service": "http://localhost:8080",  # URL of your signal-cli-rest-api instance
     "phone_number": "+1234567890",            # The phone number of your bot
-    "auth_token": "YOUR_AUTH_TOKEN",          # Your authentication token
     "storage": {
         "provider": "sqlite",  # or "redis"
         "path": "signal_storage.db",

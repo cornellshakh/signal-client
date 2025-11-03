@@ -11,6 +11,16 @@ class MessagesClient(BaseClient):
         response = await self._make_request("POST", "/v2/send", json=data)
         return cast("dict[str, Any]", response)
 
+    async def get_messages(
+        self, phone_number: str, recipient: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        """Get messages from a recipient."""
+        path = f"/v1/messages/{phone_number}/{recipient}"
+        if limit:
+            path += f"?limit={limit}"
+        response = await self._make_request("GET", path)
+        return cast("list[dict[str, Any]]", response)
+
     async def remote_delete(
         self, phone_number: str, data: dict[str, Any]
     ) -> dict[str, Any]:

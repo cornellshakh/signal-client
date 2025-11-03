@@ -19,3 +19,12 @@ class StickerPacksClient(BaseClient):
             "POST", f"/v1/sticker-packs/{phone_number}", json=data
         )
         return cast("dict[str, Any]", response)
+
+    async def get_sticker_pack(
+        self, phone_number: str, pack_id: str, sticker_id: str
+    ) -> bytes:
+        """Get a sticker from a sticker pack."""
+        response = await self._make_request(
+            "GET", f"/v1/sticker-packs/{phone_number}/{pack_id}/{sticker_id}"
+        )
+        return cast("bytes", response)

@@ -38,3 +38,21 @@ class ContactsClient(BaseClient):
             "GET", f"/v1/contacts/{phone_number}/{uuid}/avatar"
         )
         return cast("bytes", response)
+
+    async def block_contact(
+        self, phone_number: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Block a contact."""
+        response = await self._make_request(
+            "POST", f"/v1/contacts/{phone_number}/block", json=data
+        )
+        return cast("dict[str, Any]", response)
+
+    async def unblock_contact(
+        self, phone_number: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Unblock a contact."""
+        response = await self._make_request(
+            "POST", f"/v1/contacts/{phone_number}/unblock", json=data
+        )
+        return cast("dict[str, Any]", response)

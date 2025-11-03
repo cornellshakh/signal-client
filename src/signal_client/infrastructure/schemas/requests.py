@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from .link_preview import LinkPreview
+
 
 class SendMessageRequest(BaseModel):
     message: str
@@ -13,6 +15,7 @@ class SendMessageRequest(BaseModel):
     quote_author: str | None = None
     quote_message: str | None = None
     quote_timestamp: int | None = None
+    preview: LinkPreview | None = None
 
 
 class TypingIndicatorRequest(BaseModel):

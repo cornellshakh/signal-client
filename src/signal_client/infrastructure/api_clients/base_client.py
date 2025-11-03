@@ -22,11 +22,9 @@ class BaseClient:
         self,
         session: aiohttp.ClientSession,
         base_url: str,
-        auth_token: str | None = None,
     ) -> None:
         self._session = session
         self._base_url = base_url
-        self._auth_token = auth_token
 
     async def _handle_response(
         self, response: aiohttp.ClientResponse
@@ -53,12 +51,6 @@ class BaseClient:
         **kwargs: Any,  # noqa: ANN401
     ) -> dict[str, Any] | list[dict[str, Any]] | bytes:
         url = f"{self._base_url}{path}"
-        headers = kwargs.pop("headers", {})
-        if self._auth_token:
-            headers["Authorization"] = f"Bearer {self._auth_token}"
-
-        kwargs["headers"] = headers
-
         try:
             async with self._session.request(method, url, **kwargs) as response:
                 return await self._handle_response(response)

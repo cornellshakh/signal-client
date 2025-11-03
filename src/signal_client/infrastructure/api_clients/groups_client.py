@@ -82,10 +82,26 @@ class GroupsClient(BaseClient):
         )
         return cast("bytes", response)
 
+    async def set_avatar(
+        self, phone_number: str, group_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Set the avatar of a Signal Group."""
+        response = await self._make_request(
+            "PUT", f"/v1/groups/{phone_number}/{group_id}/avatar", json=data
+        )
+        return cast("dict[str, Any]", response)
+
     async def block(self, phone_number: str, group_id: str) -> dict[str, Any]:
         """Block a Signal Group."""
         response = await self._make_request(
             "POST", f"/v1/groups/{phone_number}/{group_id}/block"
+        )
+        return cast("dict[str, Any]", response)
+
+    async def unblock(self, phone_number: str, group_id: str) -> dict[str, Any]:
+        """Unblock a Signal Group."""
+        response = await self._make_request(
+            "DELETE", f"/v1/groups/{phone_number}/{group_id}/block"
         )
         return cast("dict[str, Any]", response)
 

@@ -39,79 +39,66 @@ class Container(containers.DeclarativeContainer):
         AccountsClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     attachments_client = providers.Singleton(
         AttachmentsClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     contacts_client = providers.Singleton(
         ContactsClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     devices_client = providers.Singleton(
         DevicesClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     general_client = providers.Singleton(
         GeneralClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     groups_client = providers.Singleton(
         GroupsClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     identities_client = providers.Singleton(
         IdentitiesClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     messages_client = providers.Singleton(
         MessagesClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     profiles_client = providers.Singleton(
         ProfilesClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     reactions_client = providers.Singleton(
         ReactionsClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     receipts_client = providers.Singleton(
         ReceiptsClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     search_client = providers.Singleton(
         SearchClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
     sticker_packs_client = providers.Singleton(
         StickerPacksClient,
         session=session,
         base_url=config.base_url,
-        auth_token=config.auth_token,
     )
 
     storage_service = providers.Singleton(

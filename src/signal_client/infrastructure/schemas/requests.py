@@ -8,7 +8,7 @@ from .link_preview import LinkPreview
 class SendMessageRequest(BaseModel):
     message: str
     recipients: list[str]
-    number: str
+    number: str | None = None
     base64_attachments: list[str] = Field(default_factory=list)
     mentions: list[dict] | None = None
     view_once: bool = False

@@ -23,7 +23,6 @@ class Context:
         self.general = container.general_client()
         self.groups = container.groups_client()
         self.identities = container.identities_client()
-        self.lock_manager = container.lock_manager()
         self.messages = container.messages_client()
         self.profiles = container.profiles_client()
         self.reactions = container.reactions_client()
@@ -36,15 +35,16 @@ class Context:
         """Send a message to a recipient."""
         if not request.recipients:
             request.recipients = [self.message.recipient()]
+        if request.number is None:
+            request.number = self._phone_number
         await self.messages.send(request.model_dump(exclude_none=True))
 
     async def reply(self, request: SendMessageRequest) -> None:
         """Reply to the incoming message, quoting it."""
-        request.recipients = [self.message.recipient()]
         request.quote_author = self.message.source
         request.quote_message = self.message.message
         request.quote_timestamp = self.message.timestamp
-        await self.messages.send(request.model_dump(exclude_none=True))
+        await self.send(request)
 
     async def react(self, emoji: str) -> None:
         """Add a reaction to the incoming message."""

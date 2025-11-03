@@ -19,10 +19,8 @@ from .infrastructure.api_clients import (
     StickerPacksClient,
 )
 from .infrastructure.websocket_client import WebSocketClient
-from .services.lock_manager import LockManager
 from .services.message_parser import MessageParser
 from .services.message_service import MessageService
-from .services.storage_service import StorageService
 from .services.worker_pool_manager import WorkerPoolManager
 
 
@@ -101,11 +99,6 @@ class Container(containers.DeclarativeContainer):
         base_url=config.base_url,
     )
 
-    storage_service = providers.Singleton(
-        StorageService,
-        config=config.storage,
-    )
-
     websocket_client = providers.Singleton(
         WebSocketClient,
         signal_service_url=config.signal_service,
@@ -117,8 +110,6 @@ class Container(containers.DeclarativeContainer):
         websocket_client=websocket_client,
         queue=message_queue,
     )
-
-    lock_manager = providers.Singleton(LockManager)
 
     message_parser = providers.Singleton(MessageParser)
 

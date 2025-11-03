@@ -8,6 +8,7 @@ import pytest
 from signal_client import SignalClient
 from signal_client.command import Command
 from signal_client.context import Context
+from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
 
 async def send_message(bot: SignalClient, text: str):
@@ -44,7 +45,8 @@ async def test_bot_registers_and_handles_command(bot: SignalClient):
         case_sensitive = False
 
         async def handle(self, context: Context) -> None:
-            await context.send("pong")
+            request = SendMessageRequest(message="pong", recipients=[])
+            await context.send(request)
             command_handled.set()
 
     bot.register(PingCommand())

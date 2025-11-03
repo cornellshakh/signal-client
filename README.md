@@ -1,9 +1,7 @@
 # 👋 Python Signal Client
 
-[![CI](https://github.com/cornellshakh/signal_client/actions/workflows/ci.yml/badge.svg)](https://github.com/cornellshakh/signal-client/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/signal_client.svg)](https://pypi.org/project/signal_client/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/signal_client.svg)](https://pypi.org/project/signal_client)
-[![Downloads](https://static.pepy.tech/badge/signal_client)](https://pepy.tech/project/signal_client)
+[![CI](https://github.com/cornellshakh/signal-client/actions/workflows/ci.yml/badge.svg)](https://github.com/cornellshakh/signal-client/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/signal-client.svg)](https://pypi.org/project/signal-client/)
 [![License](https://img.shields.io/pypi/l/signal_client.svg)](https://github.com/cornellshakh/signal_client/blob/main/LICENSE)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 

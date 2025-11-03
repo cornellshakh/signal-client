@@ -8,6 +8,7 @@ import pytest
 from signal_client import SignalClient
 from signal_client.context import Context
 from signal_client.infrastructure.schemas.message import Message, MessageType
+from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
 
 @pytest.mark.asyncio
@@ -23,13 +24,14 @@ async def test_context_send(bot: SignalClient):
     context = Context(bot.container, message)
 
     # Act
-    await context.send("hello")
+    request = SendMessageRequest(message="hello", recipients=[])
+    await context.send(request)
 
     # Assert
     send_mock = cast("AsyncMock", bot.container.messages_client().send)
-    (request,) = send_mock.call_args.args
-    assert request["message"] == "hello"
-    assert request["recipients"] == ["user1"]
+    (request_dict,) = send_mock.call_args.args
+    assert request_dict["message"] == "hello"
+    assert request_dict["recipients"] == ["user1"]
 
 
 @pytest.mark.asyncio
@@ -45,13 +47,14 @@ async def test_context_reply(bot: SignalClient):
     context = Context(bot.container, message)
 
     # Act
-    await context.reply("hello")
+    request = SendMessageRequest(message="hello", recipients=[])
+    await context.reply(request)
 
     # Assert
     send_mock = cast("AsyncMock", bot.container.messages_client().send)
-    (request,) = send_mock.call_args.args
-    assert request["message"] == "hello"
-    assert request["recipients"] == ["user1"]
-    assert request["quote_author"] == "user1"
-    assert request["quote_message"] == "test"
-    assert request["quote_timestamp"] == 1
+    (request_dict,) = send_mock.call_args.args
+    assert request_dict["message"] == "hello"
+    assert request_dict["recipients"] == ["user1"]
+    assert request_dict["quote_author"] == "user1"
+    assert request_dict["quote_message"] == "test"
+    assert request_dict["quote_timestamp"] == 1

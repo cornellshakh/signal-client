@@ -43,7 +43,7 @@ The `Context` object is the bridge between your command's logic and the Signal A
 
 ### Key Attributes
 
-- `message: Message`: The parsed incoming message object, containing details like the sender (`source`), the message content (`text`), and timestamp.
+- `message: Message`: The parsed incoming message object from `infrastructure/schemas/message.py`, containing details like the sender (`source`), the message content (`text`), and timestamp.
 
 ### Key Methods
 

@@ -123,7 +123,7 @@ async def main():
     phone_number = "+1234567890"
 
     config = {
-        "signal_service": "localhost:8080",
+        "signal_service": "http://localhost:8080",
         "phone_number": phone_number,
     }
 

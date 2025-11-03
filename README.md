@@ -76,7 +76,7 @@ class PingCommand:
 async def main():
     CONFIG = {
         "signal_service": "http://localhost:8080",
-        "phone_number": "+1234567890", # Your bot's number
+        "phone_number": "+1234567890",  # Your bot's number
     }
     client = SignalClient(CONFIG)
     client.register(PingCommand())

@@ -41,7 +41,7 @@ The `Context` object is passed to a command's `handle` method and provides a hig
 
 ### Attributes
 
-- `message: Message`: The parsed incoming message object.
+- `message: Message`: The parsed incoming message object from `infrastructure/schemas/message.py`.
 
 ### Methods
 
@@ -99,6 +99,12 @@ The `Command` protocol defines the interface that all command classes must imple
 ## API Clients
 
 The following sections detail the methods available in each of the API clients. These clients are accessible via the `Context` object in a command's `handle` method.
+
+### `RateLimiter`
+
+**File:** `signal_client/services/rate_limiter.py`
+
+- `acquire()`: Acquires a permit from the rate limiter. This is an async method that should be awaited.
 
 ### `AccountsClient`
 

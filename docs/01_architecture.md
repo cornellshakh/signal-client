@@ -31,6 +31,8 @@ graph TD
             D[MessageQueue]
             E[WorkerPoolManager]
             F[Worker]
+            P[MessageParser]
+            Q[RateLimiter]
         end
         subgraph "Infrastructure"
             G[BaseClient]
@@ -46,13 +48,15 @@ graph TD
     end
 
     A -- Sends Message --> B
-    B -- Pushes Message --> C
-    C -- Places Message in --> D
+    B -- Pushes Raw Message --> C
+    C -- Places Raw Message in --> D
     E -- Manages --> F
-    F -- Pulls Message from --> D
-    F -- Creates --> L
+    F -- Pulls Raw Message from --> D
+    F -- Uses --> P
+    P -- Parses Raw Message --> L
     L -- Uses --> M
     L -- Uses --> H
+    L -- Uses --> Q
     H -- Inherits from --> G
     H -- Uses --> I
     G -- Makes HTTP Requests --> B
@@ -63,23 +67,25 @@ graph TD
 
 ### 2.1. The Resilient Core: Managed Worker Pool
 
-- **`WebSocketClient`:** Receives messages from the Signal service. Its only job is to put the raw message into the `MessageQueue`.
+- **`WebSocketClient`:** Receives raw JSON messages from the Signal service. Its only job is to put the raw message into the `MessageQueue`.
 - **`MessageQueue`:** An `asyncio.Queue` that acts as a central buffer. This provides **backpressure**, preventing the system from being overwhelmed by a burst of messages.
+- **`MessageParser`:** A service responsible for parsing the raw JSON messages from the `MessageQueue` into structured `Message` objects.
 - **`WorkerPoolManager`:** Creates, starts, and supervises a **fixed, configurable number of `Worker` tasks**. This provides **bounded concurrency**, ensuring the system remains stable and does not exhaust resources.
-- **`Worker`:** A long-running task that sits in a loop, pulls a message from the queue, matches it to a command, creates a `Context`, and executes the command's `handle` method.
+- **`Worker`:** A long-running task that sits in a loop, pulls a raw message from the queue, uses the `MessageParser` to create a `Message`, matches it to a command, creates a `Context`, and executes the command's `handle` method.
+- **`RateLimiter`:** A service that ensures the bot does not exceed the API rate limits of the Signal service.
 
 ### 2.2. The Future-Proof Infrastructure: Vertical Slicing
 
 - **`BaseClient`:** A shared base class that manages the `aiohttp.ClientSession`, authentication, base URL, and common error handling. This enforces the **DRY principle**.
 - **`API Clients`:** A collection of small, focused clients (e.g., `groups_client.py`, `messages_client.py`) that inherit from the `BaseClient`. Each client is responsible for a single API resource, ensuring **SRP**.
-- **`Schemas`:** A dedicated directory (`schemas/`) containing all the Pydantic models for API requests and responses (DTOs). This keeps the `domain` layer pure.
+- **`Schemas`:** A dedicated directory (`infrastructure/schemas/`) containing all the Pydantic models for API requests and responses (DTOs).
 
 ### 2.3. The Application Layer
 
 - **`SignalClient`:** The main entry point. It initializes the `Container` and starts the `WorkerPoolManager` and `WebSocketClient`.
 - **`Container`:** The dependency injection container that wires everything together.
-- **`Context`:** The object passed to commands, providing a high-level API. It will be injected with the specific API clients it needs.
-- **`LockManager`:** A new service that provides `asyncio.Lock` objects to commands via the `Context`. This allows developers to easily write thread-safe code and prevent race conditions.
+- **`Context`:** The object passed to commands, providing a high-level API. It is injected with the specific API clients it needs.
+- **`LockManager`:** A service that provides `asyncio.Lock` objects to commands via the `Context`. This allows developers to easily write thread-safe code and prevent race conditions.
 
 ## 3. Implementation Plan
 

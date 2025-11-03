@@ -13,7 +13,7 @@ The `infrastructure` layer is responsible for all communication with external sy
 
 ### `schemas/` (Directory)
 
-- **Purpose:** This directory contains all the Pydantic models for API requests and responses (DTOs). This keeps the `domain` layer pure and ensures that all API communication is type-safe.
+- **Purpose:** This directory contains all the Pydantic models for API requests and responses (DTOs). This ensures that all API communication is type-safe.
 
 ### `storage/` (Directory)
 

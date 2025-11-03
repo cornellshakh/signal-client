@@ -20,12 +20,17 @@ Whether you are a developer looking to build a bot or an LLM seeking to understa
 
 ### In-Depth Guides
 
-- **[Domain Layer](./03_domain_layer.md)**
+- **[Data Models (Schemas)](./03_domain_layer.md)**
   - A deep dive into the core data models of the library (e.g., `Message`, `Group`, `Contact`).
 - **[Services Layer](./04_services_layer.md)**
   - A detailed look at the services that contain the core application logic.
 - **[Infrastructure Layer](./05_infrastructure_layer.md)**
   - An overview of the components that handle communication with external systems like the Signal API.
+
+- **[Writing Asynchronous Commands](./writing_async_commands.md)**
+  - Best practices for writing non-blocking, high-performance commands.
+- **[Coding Standards](./coding_standards.md)**
+  - The mandatory coding standards for contributing to this project.
 
 ### API Reference
 

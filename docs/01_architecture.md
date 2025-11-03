@@ -33,6 +33,7 @@ graph TD
             F[Worker]
             P[MessageParser]
             Q[RateLimiter]
+            R[CircuitBreaker]
         end
         subgraph "Infrastructure"
             G[BaseClient]
@@ -57,6 +58,7 @@ graph TD
     L -- Uses --> M
     L -- Uses --> H
     L -- Uses --> Q
+    G -- Uses --> R
     H -- Inherits from --> G
     H -- Uses --> I
     G -- Makes HTTP Requests --> B
@@ -73,6 +75,7 @@ graph TD
 - **`WorkerPoolManager`:** Creates, starts, and supervises a **fixed, configurable number of `Worker` tasks**. This provides **bounded concurrency**, ensuring the system remains stable and does not exhaust resources.
 - **`Worker`:** A long-running task that sits in a loop, pulls a raw message from the queue, uses the `MessageParser` to create a `Message`, matches it to a command, creates a `Context`, and executes the command's `handle` method.
 - **`RateLimiter`:** A service that ensures the bot does not exceed the API rate limits of the Signal service.
+- **`CircuitBreaker`:** A service that prevents the bot from making repeated requests to a failing external service.
 
 ### 2.2. The Future-Proof Infrastructure: Vertical Slicing
 

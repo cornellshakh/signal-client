@@ -1,0 +1,19 @@
+site_name: signal-client
+theme:
+  name: material
+plugins:
+  - search
+  - mkdocs-jupyter
+nav:
+  - Home: index.md
+  - Architecture: 01_architecture.md
+  - Core Concepts: 02_core_concepts.md
+  - Domain Layer: 03_domain_layer.md
+  - Services Layer: 04_services_layer.md
+  - Infrastructure Layer: 05_infrastructure_layer.md
+  - API Reference: 06_api_reference.md
+  - Getting Started: 07_getting_started_tutorial.md
+  - Configuration: 08_configuration.md
+  - Coding Standards: coding_standards.md
+  - Writing Async Commands: writing_async_commands.md
+  - Interactive Tutorial: 13_interactive_tutorial.ipynb

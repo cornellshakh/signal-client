@@ -164,3 +164,63 @@ You are now ready to run your bot!
 You have successfully built your first Signal bot. You can now expand on this foundation by adding more commands, integrating with other APIs, and building more complex logic.
 
 Happy bot-building!
+
+---
+
+## A Complete, Runnable Example
+
+For your convenience, here is the complete code for the Dad Joke Bot. You can save this as `main.py` and run it directly after setting up the `signal-cli-rest-api` service.
+
+```python
+# main.py
+import asyncio
+import random
+import os
+from signal_client import SignalClient, Command, Context
+
+# A list of classic dad jokes
+DAD_JOKES = [
+    "Why don't scientists trust atoms? Because they make up everything!",
+    "I'm reading a book on anti-gravity. It's impossible to put down!",
+    "What do you call a fake noodle? An Impasta!",
+    "Why did the scarecrow win an award? Because he was outstanding in his field!",
+    "Did you hear about the claustrophobic astronaut? He just needed a little space.",
+]
+
+# 1. Define our command
+class JokeCommand(Command):
+    """
+    A simple command that replies with a random dad joke.
+    """
+    async def handle(self, context: Context) -> None:
+        """This method is called when the command is triggered."""
+        joke = random.choice(DAD_JOKES)
+        await context.reply(f"Here's a joke for you:\n\n{joke}")
+        await context.react("😂")
+
+# 2. Configure and run the client
+async def main():
+    # It's recommended to use an environment variable for the phone number
+    phone_number = os.environ.get("SIGNAL_PHONE_NUMBER")
+    if not phone_number:
+        raise ValueError(
+            "Please set the SIGNAL_PHONE_NUMBER environment variable."
+        )
+
+    config = {
+        "signal_service": "http://localhost:8080",
+        "phone_number": phone_number,
+    }
+
+    client = SignalClient(config)
+    client.register("!joke", JokeCommand())
+
+    print("Bot is starting...")
+    await client.start()
+
+if __name__ == "__main__":
+    # To run this, set the SIGNAL_PHONE_NUMBER environment variable:
+    # export SIGNAL_PHONE_NUMBER="+1234567890"
+    # python main.py
+    asyncio.run(main())
+```

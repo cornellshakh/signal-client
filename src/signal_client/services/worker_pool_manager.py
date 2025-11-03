@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 
 import structlog
 from dependency_injector import providers
@@ -20,11 +21,13 @@ class Worker:
         self,
         context_factory: providers.Factory[Context],
         queue: asyncio.Queue[str],
-        commands: list[Command],
+        trigger_regex: re.Pattern[str],
+        commands: dict[str, Command],
         message_parser: MessageParser,
     ) -> None:
         self._context_factory = context_factory
         self._queue = queue
+        self._trigger_regex = trigger_regex
         self._commands = commands
         self._message_parser = message_parser
         self._stop = asyncio.Event()
@@ -54,32 +57,30 @@ class Worker:
     async def process(self, message: Message) -> None:
         """Process a single message."""
         context = self._context_factory(message=message)
-        for command in self._commands:
-            if self.should_trigger(command, context):
-                await command.handle(context)
-
-    def should_trigger(self, command: Command, context: Context) -> bool:
-        """Determine if a command should be triggered by a message."""
         if not context.message.message or not isinstance(context.message.message, str):
-            return False
+            return
 
-        # Whitelist check
-        if command.whitelisted and context.message.source not in command.whitelisted:
-            return False
-
-        # Trigger check
         text = context.message.message
-        if not command.case_sensitive:
-            text = text.lower()
+        match = self._trigger_regex.match(text)
+        if match:
+            trigger = match.lastgroup
+            if trigger:
+                command = self._commands[trigger]
+                # Whitelist check
+                if (
+                    command.whitelisted
+                    and context.message.source not in command.whitelisted
+                ):
+                    return
 
-        for trigger in command.triggers:
-            if isinstance(trigger, str):
-                if text.startswith(trigger):
-                    return True
-            elif hasattr(trigger, "search") and trigger.search(text):
-                return True
-
-        return False
+                try:
+                    await command.handle(context)
+                except Exception:
+                    log.exception(
+                        "Command handler raised an exception",
+                        command=command,
+                        message=message,
+                    )
 
 
 class WorkerPoolManager:
@@ -94,26 +95,48 @@ class WorkerPoolManager:
         self._queue = queue
         self._message_parser = message_parser
         self._pool_size = pool_size
-        self._commands: list[Command] = []
+        self._commands: dict[str, Command] = {}
         self._workers: list[Worker] = []
         self._tasks: list[asyncio.Task] = []
+        self._trigger_regex: re.Pattern[str] | None = None
 
     def register(self, command: Command) -> None:
         """Register a new command."""
-        self._commands.append(command)
+        for trigger in command.triggers:
+            if isinstance(trigger, str):
+                if trigger in self._commands:
+                    log.warning("Overwriting trigger", trigger=trigger)
+                self._commands[trigger] = command
 
     def start(self) -> None:
         """Start the worker pool."""
+        self._compile_triggers()
+        if self._trigger_regex is None:
+            return
         for _ in range(self._pool_size):
             worker = Worker(
                 context_factory=self._context_factory,
                 queue=self._queue,
+                trigger_regex=self._trigger_regex,
                 commands=self._commands,
                 message_parser=self._message_parser,
             )
             self._workers.append(worker)
             task = asyncio.create_task(worker.process_messages())
             self._tasks.append(task)
+
+    def _compile_triggers(self) -> None:
+        """Compile the triggers into a single regex."""
+        if not self._commands:
+            self._trigger_regex = re.compile("a^")  # A regex that will never match
+            return
+        trigger_patterns = []
+        for trigger, command in self._commands.items():
+            pattern = re.escape(trigger)
+            if not command.case_sensitive:
+                pattern = f"(?i){pattern}"
+            trigger_patterns.append(f"(?P<{trigger}>{pattern})")
+        self._trigger_regex = re.compile("|".join(trigger_patterns))
 
     def stop(self) -> None:
         """Stop the worker pool."""

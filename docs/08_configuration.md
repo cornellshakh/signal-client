@@ -42,6 +42,15 @@ These settings allow you to fine-tune the performance of your bot.
   - `period`: The time period in seconds.
 - **Example:** `{"rate_limit": 10, "period": 60.0}`
 
+### `circuit_breaker`
+
+- **Type:** `dict`
+- **Default:** `{"failure_threshold": 5, "reset_timeout": 30}`
+- **Description:** A dictionary containing the configuration for the circuit breaker.
+  - `failure_threshold`: The number of consecutive failures that will cause the circuit breaker to open.
+  - `reset_timeout`: The number of seconds the circuit breaker will wait before transitioning to the "half-open" state.
+- **Example:** `{"failure_threshold": 10, "reset_timeout": 60}`
+
 ---
 
 ## Example Configuration
@@ -56,6 +65,10 @@ config = {
     "rate_limiter": {
         "rate_limit": 10,
         "period": 60.0,
+    },
+    "circuit_breaker": {
+        "failure_threshold": 10,
+        "reset_timeout": 60,
     },
 }
 

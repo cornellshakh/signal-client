@@ -1,124 +1,92 @@
 import asyncio
-import json
 import time
-import uuid
+from collections.abc import AsyncGenerator
 from typing import ClassVar
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from tqdm import tqdm
 
+from signal_client.bot import SignalClient
 from signal_client.command import Command
-from signal_client.container import Container
 from signal_client.context import Context
 
-# Configuration for the load test
-NUM_MESSAGES = 100  # A much smaller number for debugging
-WORKER_POOL_SIZE = 4  # Number of workers to use for the test
-QUEUE_SIZE = 100  # Match the number of messages for this test
-MIN_MESSAGES_PER_SECOND = 50
+MIN_THROUGHPUT = 100
+MAX_AVG_LATENCY = 0.1
+NUM_MESSAGES = 1000
+NUM_REQUESTS = 100
 
 
 class MockCommand(Command):
-    """A mock command that simulates some async work."""
-
-    triggers: ClassVar[list[str]] = ["!mock"]
+    triggers: ClassVar[list[str]] = ["!test"]
     whitelisted: ClassVar[list[str]] = []
-    case_sensitive = False
+    case_sensitive: bool = False
 
-    async def handle(self, _: Context) -> None:
-        # Simulate a small amount of I/O-bound work (e.g., an API call)
-        await asyncio.sleep(0.01)
-        # Use the lock manager to simulate a real-world command
-        # async with context.lock(context.message.source):
-        #     # Simulate some work inside the lock
-        await asyncio.sleep(0.01)
+    async def handle(self, _context: Context) -> None:
+        await asyncio.sleep(0.01)  # Simulate some work
 
 
-@pytest.mark.timeout(0)
 @pytest.mark.asyncio
-async def test_performance(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_message_throughput():
     """
-    A load test to measure the performance of the message processing pipeline.
+    Measures the number of messages the bot can process per second.
     """
-    # Mock the websocket client to prevent it from trying to connect
-    monkeypatch.setattr(
-        "signal_client.container.WebSocketClient.__init__", lambda *_, **__: None
-    )
+    config = {
+        "signal_service": "http://localhost:8080",
+        "phone_number": "+1234567890",
+        "worker_pool_size": 10,
+    }
+    client = SignalClient(config)
+    client.register(MockCommand())
 
-    # Set up the container with the test configuration
-    container = Container()
-    container.config.from_dict(
-        {
-            "worker_pool_size": WORKER_POOL_SIZE,
-            "queue_size": QUEUE_SIZE,
-            "phone_number": "+1234567890",
-            "base_url": "http://mock-server",
-            "signal_service": "ws://mock-server",
-        }
-    )
+    # Mock the websocket client to simulate incoming messages
+    client.container.websocket_client.override(AsyncMock())
+    websocket_client = client.container.websocket_client()
+    websocket_client.listen = MagicMock()
 
-    # Register the mock command
-    worker_pool_manager = container.worker_pool_manager()
-    worker_pool_manager.register(MockCommand())
+    async def message_generator() -> AsyncGenerator[str, None]:
+        for i in range(NUM_MESSAGES):
+            yield f'{{"type": "message", "id": {i}, "data": {{"message": "!test"}}}}'
 
-    # Start the worker pool
-    worker_pool_manager.start()
+    websocket_client.listen.return_value = message_generator()
 
-    # Get the message queue
-    queue = container.message_queue()
-
-    # Generate a large number of mock messages
-    # Generate a large number of mock messages
-    messages = [
-        {
-            "envelope": {
-                "source": f"+1000000{i % 100}",  # Simulate 100 different users
-                "sourceDevice": 1,
-                "timestamp": int(time.time() * 1000),
-                "dataMessage": {
-                    "message": "!mock",
-                    "timestamp": int(time.time() * 1000),
-                },
-            },
-            "syncMessage": {},
-            "type": "SYNC_MESSAGE",
-            "id": str(uuid.uuid4()),
-        }
-        for i in range(NUM_MESSAGES)
-    ]
-
-    # Start the timer
     start_time = time.monotonic()
-
-    # Put messages on the queue with a progress bar
-    for message in tqdm(messages, desc="Queueing messages"):
-        await queue.put(json.dumps(message))
-
-    # Wait for all messages to be processed
-    # Wait for all messages to be processed
-    await queue.join()
-
-    # Stop the timer
+    await client.start()
     end_time = time.monotonic()
 
-    # Stop the worker pool
-    worker_pool_manager.stop()
-    await worker_pool_manager.join()
-
-    # Clean up the session
-    session = container.session()
-    await session.close()
-
-    # Calculate and print the performance metrics
     duration = end_time - start_time
-    messages_per_second = NUM_MESSAGES / duration
-
-    print("\n--- Load Test Results ---")
+    throughput = NUM_MESSAGES / duration
     print(f"Processed {NUM_MESSAGES} messages in {duration:.2f} seconds.")
-    print(f"Messages per second: {messages_per_second:.2f}")
-    print(f"Worker pool size: {WORKER_POOL_SIZE}")
-    print("-----------------------")
+    print(f"Throughput: {throughput:.2f} messages/sec")
 
-    # Assert that the performance is within a reasonable range
-    # This is a baseline; it can be adjusted as the library is optimized.
-    assert messages_per_second > MIN_MESSAGES_PER_SECOND
+    # The bot should be able to process at least 100 messages per second
+    assert throughput > MIN_THROUGHPUT
+
+
+@pytest.mark.asyncio
+async def test_api_latency():
+    """
+    Measures the latency of API requests.
+    """
+    config = {
+        "signal_service": "http://localhost:8080",
+        "phone_number": "+1234567890",
+    }
+    client = SignalClient(config)
+
+    # Mock the accounts client to simulate API requests
+    client.container.accounts_client.override(AsyncMock())
+    accounts_client = client.container.accounts_client()
+    accounts_client.get_account = AsyncMock(return_value={"number": "+1234567890"})
+
+    latencies = []
+    for _ in range(NUM_REQUESTS):
+        start_time = time.monotonic()
+        await accounts_client.get_account()
+        end_time = time.monotonic()
+        latencies.append(end_time - start_time)
+
+    avg_latency = sum(latencies) / len(latencies)
+    print(f"Average latency: {avg_latency * 1000:.2f} ms")
+
+    # The average latency should be less than 100 ms
+    assert avg_latency < MAX_AVG_LATENCY

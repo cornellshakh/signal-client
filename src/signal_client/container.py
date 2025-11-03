@@ -26,7 +26,11 @@ from .infrastructure.api_clients import (
     SearchClient,
     StickerPacksClient,
 )
+from .infrastructure.storage.redis import RedisStorage
+from .infrastructure.storage.sqlite import SQLiteStorage
 from .infrastructure.websocket_client import WebSocketClient
+from .services.circuit_breaker import CircuitBreaker
+from .services.dead_letter_queue import DeadLetterQueue
 from .services.lock_manager import LockManager
 from .services.message_parser import MessageParser
 from .services.message_service import MessageService
@@ -43,7 +47,37 @@ class Container(containers.DeclarativeContainer):
             "queue_size": 1000,
             "rate_limit": 50,
             "rate_limit_period": 1,
+            "circuit_breaker_failure_threshold": 5,
+            "circuit_breaker_reset_timeout": 30,
+            "circuit_breaker_failure_rate_threshold": 0.5,
+            "circuit_breaker_min_requests_for_rate_calc": 10,
+            "storage_type": "sqlite",
+            "redis_host": "localhost",
+            "redis_port": 6379,
+            "sqlite_database": "signal_client.db",
+            "dlq_name": "signal_client_dlq",
         }
+    )
+
+    storage = providers.Selector(
+        config.storage_type,
+        sqlite=providers.Singleton(
+            SQLiteStorage,
+            database=config.sqlite_database,
+        ),
+        redis=providers.Singleton(
+            RedisStorage,
+            host=config.redis_host,
+            port=config.redis_port,
+        ),
+    )
+
+    circuit_breaker = providers.Singleton(
+        CircuitBreaker,
+        failure_threshold=config.circuit_breaker_failure_threshold,
+        reset_timeout=config.circuit_breaker_reset_timeout,
+        failure_rate_threshold=config.circuit_breaker_failure_rate_threshold,
+        min_requests_for_rate_calc=config.circuit_breaker_min_requests_for_rate_calc,
     )
 
     rate_limiter = providers.Singleton(
@@ -67,6 +101,7 @@ class Container(containers.DeclarativeContainer):
         backoff_factor=config.api_backoff_factor,
         timeout=config.api_timeout,
         rate_limiter=rate_limiter,
+        circuit_breaker=circuit_breaker,
     )
 
     accounts_client = providers.Singleton(AccountsClient, client_config=client_config)
@@ -95,10 +130,17 @@ class Container(containers.DeclarativeContainer):
         phone_number=config.phone_number,
     )
 
+    dead_letter_queue = providers.Singleton(
+        DeadLetterQueue,
+        storage=storage,
+        queue_name=config.dlq_name,
+    )
+
     message_service = providers.Singleton(
         MessageService,
         websocket_client=websocket_client,
         queue=message_queue,
+        dead_letter_queue=dead_letter_queue,
     )
 
     message_parser = providers.Singleton(MessageParser)

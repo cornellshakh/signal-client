@@ -20,7 +20,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install tooling
         run: |
-          pip install poetry pip-audit
+          pip install poetry poetry-plugin-export pip-audit
       - name: Install project dependencies
         run: |
           poetry install

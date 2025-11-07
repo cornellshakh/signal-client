@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "docs/**"
-      - "mkdocs.yml"
-      - "README.md"
-      - "theme/**"
-      - "macros/**"
   workflow_dispatch:
 
 permissions:

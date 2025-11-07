@@ -3,8 +3,14 @@ site_url: https://cornellsh.github.io/signal-client/
 repo_name: cornellsh/signal-client
 repo_url: https://github.com/cornellsh/signal-client
 theme:
-  name: null
-  custom_dir: theme
+  name: shadcn
+  show_title: true
+  show_stargazers: true
+  icon: heroicons:bolt
+  pygments_style:
+    light: shadcn-light
+    dark: github-dark
+  topbar_sections: false
 plugins:
   - search
   - glightbox
@@ -17,6 +23,8 @@ plugins:
   - badges
   - minify:
       minify_html: true
+extra_css:
+  - styles/theme.css
 markdown_extensions:
   - admonition
   - attr_list

@@ -1,9 +1,0 @@
-{%- if script.path %} {# Detected MkDocs 1.5+ which has `script.path` and `script_tag` #}
-{{ script | script_tag }}
-{%- else %} {# Fallback - examine the file name directly #}
-{% if script.endswith('.mjs') %}
-<script src="{{ script | url }}" type="module"></script>
-{% else %}
-<script src="{{ script | url }}"></script>
-{% endif %}
-{%- endif %}

@@ -1,0 +1,169 @@
+/* Custom styling for Signal Client documentation */
+
+:root {
+  --sc-hero-gradient: linear-gradient(135deg, rgba(63, 81, 181, 0.95), rgba(0, 188, 212, 0.95));
+  --sc-card-shadow: 0 15px 45px rgba(24, 33, 79, 0.18);
+  --sc-border-radius: 18px;
+}
+
+.hero-splash {
+  position: relative;
+  padding: 4.5rem 3rem;
+  margin-bottom: 3rem;
+  border-radius: var(--sc-border-radius);
+  background: var(--sc-hero-gradient);
+  color: var(--md-primary-bg-color, #fff);
+  overflow: hidden;
+}
+
+.hero-splash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 45%);
+  pointer-events: none;
+}
+
+.hero-splash h1 {
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.hero-splash p {
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  max-width: 40rem;
+  margin-bottom: 1.8rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.8rem;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-badges span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+}
+
+.hero-badges .material-icons {
+  font-size: 1.1rem;
+}
+
+.cards-highlight {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0 3rem;
+}
+
+.cards-highlight .card {
+  border-radius: var(--sc-border-radius);
+  padding: 1.75rem;
+  background: var(--md-default-bg-color);
+  box-shadow: var(--sc-card-shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  border: 1px solid rgba(63, 81, 181, 0.08);
+}
+
+.cards-highlight .card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 50px rgba(24, 33, 79, 0.24);
+}
+
+.cards-highlight .card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.timeline-section {
+  margin: 3.5rem 0;
+}
+
+.timeline-section .timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  border-left: 2px solid rgba(63, 81, 181, 0.25);
+}
+
+.timeline-section .timeline li {
+  margin-bottom: 1.25rem;
+}
+
+.timeline-section .timeline strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.metrics-band {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+  margin: 2.5rem 0;
+}
+
+.metrics-band .metric {
+  border-radius: 14px;
+  padding: 1.5rem 1.25rem;
+  background: rgba(63, 81, 181, 0.07);
+  border: 1px solid rgba(63, 81, 181, 0.1);
+  text-align: center;
+}
+
+.metrics-band .metric strong {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.cta-panel {
+  margin: 4rem 0 2rem;
+  padding: 2.5rem;
+  border-radius: var(--sc-border-radius);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(63, 81, 181, 0.08));
+  border: 1px solid rgba(63, 81, 181, 0.15);
+  text-align: center;
+}
+
+.cta-panel h2 {
+  margin-top: 0;
+  font-size: 2rem;
+}
+
+@media screen and (max-width: 768px) {
+  .hero-splash {
+    padding: 3rem 1.75rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-badges {
+    gap: 0.45rem;
+  }
+}

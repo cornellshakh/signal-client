@@ -26,10 +26,14 @@ def message_parser() -> MessageParser:
 def worker(bot: SignalClient, message_parser: MessageParser) -> Worker:
     """Return a worker with mocked dependencies."""
     return Worker(
-        container=bot.container,
+        context_factory=bot.container.services_container.context,
         queue=AsyncMock(),
-        commands=[],
+        commands={},
         message_parser=message_parser,
+        sensitive_trigger_regex=None,
+        insensitive_trigger_regex=None,
+        sensitive_triggers=[],
+        insensitive_triggers=[],
     )
 
 
@@ -210,3 +214,46 @@ def test_parse_message_mention(message_parser: MessageParser) -> None:
 
     assert message is not None
     assert message.mentions == ["+0987654321"]
+
+
+def test_parse_message_malformed_json(message_parser: MessageParser) -> None:
+    """Test that malformed JSON returns None."""
+    raw_message_str = '{"envelope":'
+    message = message_parser.parse(raw_message_str)
+    assert message is None
+
+
+@pytest.mark.parametrize(
+    "raw_message",
+    [
+        {},  # Empty JSON object
+        {"foo": "bar"},  # Missing 'envelope'
+        {"envelope": {}},  # Envelope with no data
+        {"envelope": {"unsupportedMessage": {}}},  # Unsupported message type
+    ],
+)
+def test_parse_message_edge_cases(
+    message_parser: MessageParser, raw_message: dict
+) -> None:
+    """Test various edge cases that should result in None."""
+    raw_message_str = json.dumps(raw_message)
+    message = message_parser.parse(raw_message_str)
+    assert message is None
+
+
+def test_parse_message_with_no_message_body(message_parser: MessageParser) -> None:
+    """Test that a dataMessage with no actual message content is handled."""
+    raw_message = {
+        "envelope": {
+            "source": "+1234567890",
+            "timestamp": TIMESTAMP,
+            "dataMessage": {
+                "timestamp": TIMESTAMP,
+                "message": None,  # Explicitly None
+            },
+        }
+    }
+    raw_message_str = json.dumps(raw_message)
+    message = message_parser.parse(raw_message_str)
+    assert message is not None
+    assert message.message is None

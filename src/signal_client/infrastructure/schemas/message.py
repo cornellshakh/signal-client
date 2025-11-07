@@ -1,6 +1,7 @@
+import uuid
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MessageType(Enum):
@@ -11,6 +12,7 @@ class MessageType(Enum):
 
 
 class Message(BaseModel):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     message: str | None = None
     source: str
     timestamp: int

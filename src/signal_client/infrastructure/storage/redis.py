@@ -10,25 +10,47 @@ class RedisStorage(Storage):
     def __init__(self, host: str, port: int) -> None:
         self._redis: redis.Redis = redis.Redis(host=host, port=port, db=0)
 
+    @property
+    def client(self) -> redis.Redis:
+        """Expose the underlying Redis client for testing purposes."""
+        return self._redis
+
     async def exists(self, key: str) -> bool:
         return await self._redis.exists(key) > 0
 
     async def read(self, key: str) -> dict[str, Any] | list[dict[str, Any]]:
         try:
-            result_bytes = await self._redis.get(key)
-            if result_bytes is None:
+            result_bytes = await self._redis.hgetall(key)  # type: ignore[misc]
+            if not result_bytes:
                 msg = f"Key '{key}' not found in Redis storage."
                 raise StorageError(msg)
-            result_str = result_bytes.decode("utf-8")
-            return json.loads(result_str)
+
+            if b"__list__" in result_bytes:
+                list_payload = json.loads(result_bytes[b"__list__"].decode("utf-8"))
+                if isinstance(list_payload, list):
+                    return list_payload
+                msg = "Redis stored list payload is corrupted."
+                raise StorageError(msg)
+
+            return {
+                k.decode("utf-8"): json.loads(v.decode("utf-8"))
+                for k, v in result_bytes.items()
+            }
         except (redis.RedisError, TypeError, json.JSONDecodeError) as e:
             msg = f"Redis load failed: {e}"
             raise StorageError(msg) from e
 
     async def save(self, key: str, data: dict[str, Any] | list[dict[str, Any]]) -> None:
         try:
-            object_str = json.dumps(data)
-            await self._redis.set(key, object_str)
+            if isinstance(data, list):
+                serialized_data = {"__list__": json.dumps(data)}
+            else:
+                serialized_data = {k: json.dumps(v) for k, v in data.items()}
+            if not serialized_data:
+                await self._redis.delete(key)
+                return
+
+            await self._redis.hset(key, mapping=serialized_data)  # type: ignore[misc]
         except (redis.RedisError, TypeError) as e:
             msg = f"Redis save failed: {e}"
             raise StorageError(msg) from e

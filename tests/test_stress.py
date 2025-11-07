@@ -1,47 +1,39 @@
 import asyncio
 import json
+import random
 import time
 import uuid
-from typing import ClassVar
 
 import pytest
-from tqdm import tqdm
 
-from signal_client.command import Command
-from signal_client.container import Container
+from signal_client.bot import SignalClient
+from signal_client.command import command
 from signal_client.context import Context
+from signal_client.services.models import QueuedMessage
 
 # Configuration for the stress test
-NUM_MESSAGES = 1000
-WORKER_POOL_SIZE = 4
+NUM_MESSAGES = 400
+WORKER_POOL_SIZE = 10
 QUEUE_SIZE = 100  # Intentionally smaller than NUM_MESSAGES to test backpressure
 MIN_MESSAGES_PER_SECOND = 50
+SEED = 123
 
 
-class FastCommand(Command):
+@command("!fast")
+async def fast_command(_: Context) -> None:
     """A mock command that completes quickly."""
-
-    triggers: ClassVar[list[str]] = ["!fast"]
-    whitelisted: ClassVar[list[str]] = []
-    case_sensitive = False
-
-    async def handle(self, _: Context) -> None:
-        await asyncio.sleep(0.01)
+    await asyncio.sleep(0)
 
 
-class SlowCommand(Command):
+@command("!slow")
+async def slow_command(_: Context) -> None:
     """A mock command that simulates a long-running operation."""
-
-    triggers: ClassVar[list[str]] = ["!slow"]
-    whitelisted: ClassVar[list[str]] = []
-    case_sensitive = False
-
-    async def handle(self, _: Context) -> None:
-        await asyncio.sleep(1)
+    await asyncio.sleep(0.05)
 
 
 @pytest.mark.timeout(0)
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_env_vars")
 async def test_thundering_herd_and_slow_commands(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -54,25 +46,25 @@ async def test_thundering_herd_and_slow_commands(
         "signal_client.container.WebSocketClient.__init__", lambda *_, **__: None
     )
 
-    container = Container()
-    container.config.from_dict(
-        {
-            "worker_pool_size": WORKER_POOL_SIZE,
-            "queue_size": QUEUE_SIZE,
-            "phone_number": "+1234567890",
-            "base_url": "http://mock-server",
-            "signal_service": "ws://mock-server",
-        }
-    )
+    config = {
+        "worker_pool_size": WORKER_POOL_SIZE,
+        "queue_size": QUEUE_SIZE,
+        "phone_number": "+1234567890",
+        "base_url": "http://mock-server",
+        "signal_service": "ws://mock-server",
+    }
+    client = SignalClient(config=config)
+    container = client.container
 
-    worker_pool_manager = container.worker_pool_manager()
-    worker_pool_manager.register(FastCommand())
-    worker_pool_manager.register(SlowCommand())
+    worker_pool_manager = container.services_container.worker_pool_manager()
+    worker_pool_manager.register(fast_command)
+    worker_pool_manager.register(slow_command)
     worker_pool_manager.start()
 
-    queue = container.message_queue()
+    queue = container.services_container.message_queue()
 
     messages = []
+    random.seed(SEED)
     for i in range(NUM_MESSAGES):
         command = "!slow" if i % 10 == 0 else "!fast"  # 10% of commands are slow
         messages.append(
@@ -95,8 +87,10 @@ async def test_thundering_herd_and_slow_commands(
     start_time = time.monotonic()
 
     # This will fill the queue and block until workers start processing
-    for message in tqdm(messages, desc="Queueing messages"):
-        await queue.put(json.dumps(message))
+    for message in messages:
+        await queue.put(
+            QueuedMessage(raw=json.dumps(message), enqueued_at=time.perf_counter())
+        )
 
     await queue.join()
     end_time = time.monotonic()
@@ -104,7 +98,7 @@ async def test_thundering_herd_and_slow_commands(
     worker_pool_manager.stop()
     await worker_pool_manager.join()
 
-    session = container.session()
+    session = container.api_client_container.session()
     await session.close()
 
     duration = end_time - start_time

@@ -1,17 +1,24 @@
+from __future__ import annotations
+
 import asyncio
 import json
-from typing import ClassVar, cast
-from unittest.mock import MagicMock
+import time
+from collections.abc import Awaitable, Callable
+from typing import cast
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import structlog
 
 from signal_client import SignalClient
-from signal_client.command import Command
+from signal_client import bot as bot_module
+from signal_client.command import command
 from signal_client.context import Context
 from signal_client.infrastructure.schemas.requests import SendMessageRequest
+from signal_client.services.models import QueuedMessage
 
 
-async def send_message(bot: SignalClient, text: str):
+async def send_message(bot: SignalClient, text: str) -> None:
     """Helper to simulate sending a message to the bot."""
     message = {
         "envelope": {
@@ -23,36 +30,37 @@ async def send_message(bot: SignalClient, text: str):
             },
         }
     }
-    await bot.container.message_queue().put(json.dumps(message))
+    await bot.container.services_container.message_queue().put(
+        QueuedMessage(raw=json.dumps(message), enqueued_at=time.perf_counter())
+    )
 
 
-def assert_sent(bot: SignalClient, text: str):
+def assert_sent(bot: SignalClient, text: str) -> None:
     """Helper to assert that a message was sent by the bot."""
-    send_mock = cast("MagicMock", bot.container.messages_client().send)
+    send_mock = cast(
+        "MagicMock", bot.container.api_client_container.messages_client().send
+    )
     (request,) = send_mock.call_args.args
     assert request["message"] == text
 
 
 @pytest.mark.asyncio
-async def test_bot_registers_and_handles_command(bot: SignalClient):
+@pytest.mark.usefixtures("mock_env_vars")
+async def test_bot_registers_and_handles_command(bot: SignalClient) -> None:
     """Test that the bot registers a command and handles it correctly."""
     # Arrange
     command_handled = asyncio.Event()
 
-    class PingCommand(Command):
-        triggers: ClassVar[list[str]] = ["!ping"]
-        whitelisted: ClassVar[list[str]] = []
-        case_sensitive = False
+    @command("!ping")
+    async def ping_command(context: Context) -> None:
+        request = SendMessageRequest(message="pong", recipients=[])
+        await context.send(request)
+        command_handled.set()
 
-        async def handle(self, context: Context) -> None:
-            request = SendMessageRequest(message="pong", recipients=[])
-            await context.send(request)
-            command_handled.set()
-
-    bot.register(PingCommand())
+    bot.register(ping_command)
 
     # Act
-    worker_pool_manager = bot.container.worker_pool_manager()
+    worker_pool_manager = bot.container.services_container.worker_pool_manager()
     worker_pool_manager.start()
     await send_message(bot, "!ping")
     await asyncio.wait_for(command_handled.wait(), timeout=1)
@@ -63,3 +71,88 @@ async def test_bot_registers_and_handles_command(bot: SignalClient):
     # Clean up
     worker_pool_manager.stop()
     await worker_pool_manager.join()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_env_vars")
+async def test_signal_client_async_context_manager() -> None:
+    async with SignalClient() as client:
+        session = client.container.api_client_container.session()
+        assert not session.closed
+
+    assert session.closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_env_vars")
+async def test_signal_client_use_registers_middleware() -> None:
+    events = []
+
+    async def middleware(
+        context: Context, nxt: Callable[[Context], Awaitable[None]]
+    ) -> None:
+        events.append("middleware")
+        await nxt(context)
+
+    bot = SignalClient()
+
+    @command("!ping")
+    async def ping_command(_context: Context) -> None:
+        events.append("handler")
+
+    bot.register(ping_command)
+    bot.use(middleware)
+
+    worker_pool_manager = bot.container.services_container.worker_pool_manager()
+    worker_pool_manager.start()
+    await send_message(bot, "!ping")
+    await asyncio.sleep(0)
+    await bot.container.services_container.message_queue().join()
+    worker_pool_manager.stop()
+    await worker_pool_manager.join()
+
+    assert events == ["middleware", "handler"]
+
+
+@pytest.mark.usefixtures("mock_env_vars")
+def test_signal_client_respects_existing_structlog_configuration() -> None:
+    structlog.reset_defaults()
+    bot_module.reset_structlog_configuration_for_tests()
+
+    original_processors = [structlog.processors.TimeStamper(fmt="iso")]
+    structlog.configure(processors=original_processors)
+
+    client = SignalClient()
+    settings = client.container.settings()
+    assert settings.phone_number == "+1234567890"
+    asyncio.run(client.shutdown())
+
+    configured_processors = structlog.get_config().get("processors")
+    assert configured_processors == original_processors
+
+    structlog.reset_defaults()
+    bot_module.reset_structlog_configuration_for_tests()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("mock_env_vars")
+async def test_signal_client_start_propagates_exceptions() -> None:
+    config = {
+        "phone_number": "+1234567890",
+        "signal_service": "localhost:8080",
+        "base_url": "http://localhost:8080",
+        "worker_pool_size": 0,
+    }
+
+    client = SignalClient(config)
+
+    message_service = client.container.services_container.message_service()
+    message_service.listen = AsyncMock(side_effect=RuntimeError("listen failed"))
+
+    websocket_client = client.container.services_container.websocket_client()
+    websocket_client.close = AsyncMock()
+
+    with pytest.raises(RuntimeError, match="listen failed"):
+        await client.start()
+
+    await client.shutdown()

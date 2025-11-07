@@ -19,10 +19,22 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install dependencies
+      - name: Install tooling
         run: |
-          pip install poetry
+          pip install poetry pip-audit
+      - name: Install project dependencies
+        run: |
           poetry install
+      - name: Run release quality gate
+        run: |
+          poetry run ruff check
+          poetry run ruff format --check
+          poetry run mypy
+          poetry run pytest-safe --maxfail=1
+          poetry export --format requirements.txt --without-hashes --output requirements.txt
+          pip-audit -r requirements.txt
+          poetry run mkdocs build
+          poetry run release-guard
       - name: Run semantic-release
         run: poetry run semantic-release publish
         env:

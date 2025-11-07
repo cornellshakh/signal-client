@@ -7,22 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install poetry
-          poetry install
-      - name: Run linter
-        run: poetry run ruff check
-
-  test:
+  quality-gates:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -33,24 +18,21 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install tooling
         run: |
-          pip install poetry
-          poetry install
-      - name: Run tests
-        run: poetry run pytest
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
+          pip install poetry pip-audit
+      - name: Install project dependencies
         run: |
-          pip install poetry
           poetry install
-      - name: Run formatter
+      - name: Lint (ruff)
+        run: poetry run ruff check
+      - name: Format check (ruff)
         run: poetry run ruff format --check
+      - name: Type check (mypy)
+        run: poetry run mypy
+      - name: Unit and integration tests
+        run: poetry run pytest --maxfail=1
+      - name: Dependency vulnerability scan
+        run: |
+          poetry export --format requirements.txt --without-hashes --output requirements.txt
+          pip-audit -r requirements.txt

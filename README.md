@@ -1,133 +1,81 @@
-# 👋 Python Signal Client
+# Signal Client
 
-[![CI](https://github.com/cornellshakh/signal-client/actions/workflows/ci.yml/badge.svg)](https://github.com/cornellshakh/signal-client/actions/workflows/ci.yml)
+[![CI](https://github.com/cornellsh/signal-client/actions/workflows/ci.yml/badge.svg)](https://github.com/cornellsh/signal-client/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/signal-client.svg)](https://pypi.org/project/signal-client/)
-[![License](https://img.shields.io/pypi/l/signal_client.svg)](https://github.com/cornellshakh/signal_client/blob/main/LICENSE)
+[![License](https://img.shields.io/pypi/l/signal_client.svg)](https://github.com/cornellsh/signal_client/blob/main/LICENSE)
 
-A Python library for building bots and automating interactions with the Signal messaging platform. This library provides a high-level, asynchronous API for receiving messages, processing commands, and sending replies.
+**Build Signal automations that feel bespoke without rebuilding production plumbing.** Signal Client wraps [`signal-cli-rest-api`](https://github.com/bbernhard/signal-cli-rest-api) with a resilient async runtime, typed command surface, and observability that scales from hobby bots to high-volume workflows.
 
-It is designed to work with the [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api).
+- `pip install signal-client`
+- Documentation: https://cornellsh.github.io/signal-client/
+- API Reference: https://cornellsh.github.io/signal-client/api-reference/
 
-## Features
+## What you can build
 
-- **Command-based:** Easily define and register commands with simple triggers.
-- **Asynchronous:** Built on `asyncio` for high performance.
-- **Extensible:** Cleanly structured with dependency injection for easy customization.
-- **High-level API:** Simple `Context` object for replying, reacting, and sending messages.
+| Scenario | Outcome |
+| --- | --- |
+| Customer ops automations | Route incoming messages to the right teammate with alerts, audit logs, and retries baked in. |
+| Notification pipelines | Fan out incident or release notifications with guardrails that pause noisy queues and surface metrics immediately. |
+| Workflow assistants | Prototype assistants that enrich or respond to chats using middleware and typed contexts without blocking the event loop. |
 
-## API Coverage
+## Getting started in 3 steps
 
-This library provides **100% coverage** of the `signal-cli-rest-api`. All endpoints are implemented, ensuring that you can access the full functionality of the Signal service.
+1. **Launch `signal-cli-rest-api`** (link, pair, restart in JSON-RPC) — see the [Quickstart](./docs/quickstart.md) for copy-paste commands.
+2. **Install and verify**:
+   ```bash
+   pip install signal-client
+   python -m signal_client.compatibility
+   ```
+3. **Register a command**:
+   ```python
+   from signal_client import SignalClient, Context
 
-## Getting Started
+   class PingCommand:
+       triggers = ["!ping"]
 
-### Prerequisites
+       async def handle(self, context: Context) -> None:
+           await context.reply("Pong!")
 
-Before you begin, ensure you have the `signal-cli-rest-api` service running. Follow these steps to set it up with Docker:
+   client = SignalClient({
+       "signal_service": "http://localhost:8080",
+       "phone_number": "+1234567890",
+       "worker_pool_size": 4,
+   })
+   client.register(PingCommand())
+   ```
 
-1.  **Run `signal-cli-rest-api` in `normal` mode:**
+Ready for the full walkthrough? Head to the [Quickstart guide](https://cornellsh.github.io/signal-client/quickstart/).
 
-    This command starts the service and creates a local volume to store configuration data.
+## Feature highlights
 
-    ```bash
-    docker run -p 8080:8080 \
-        -v $(pwd)/signal-cli-config:/home/.local/share/signal-cli \
-        -e 'MODE=normal' bbernhard/signal-cli-rest-api:latest
-    ```
+- **Command-first developer experience:** Regex and string triggers, typed `Context` objects, and before/after middleware layers.
+- **Production resilience built-in:** Back-pressure controls, bounded worker pools, DLQ replay helpers, rate limiting, and circuit breakers.
+- **Observability that speaks SRE:** Prometheus metrics, structured logging with worker metadata, and compatibility guards that fail fast.
+- **Release guardrails:** Semantic version and dependency matrix enforcement keep breaking changes out of production by default.
 
-2.  **Link your account:**
+Explore the [Feature Tour](https://cornellsh.github.io/signal-client/feature-tour/) for a visual walkthrough of the runtime layers.
 
-    Open [http://127.0.0.1:8080/v1/qrcodelink?device_name=local](http://127.0.0.1:8080/v1/qrcodelink?device_name=local) in your browser to generate a QR code. In your Signal app, go to **Settings > Linked devices** and scan the code to link your account.
+## Production proof points
 
-3.  **Restart in `json-rpc` mode:**
+- CI runs linting (`ruff`, `black`), static typing (`mypy`), security scans (`pip-audit`), tests, and MkDocs builds on every push.
+- `release-guard` blocks publishing if compatibility promises or migrations aren’t acknowledged.
+- Observability guide covers metrics dashboards, log enrichment, and live debugging recipes.
 
-    Once linked, restart the container in `json-rpc` mode to begin processing messages.
+Dig deeper via the [Operations runbook](https://cornellsh.github.io/signal-client/operations/) and [Observability guide](https://cornellsh.github.io/signal-client/observability/).
 
-    ```bash
-    docker run -p 8080:8080 \
-        -v $(pwd)/signal-cli-config:/home/.local/share/signal-cli \
-        -e 'MODE=json-rpc' bbernhard/signal-cli-rest-api:latest
-    ```
+## Compatibility matrix
 
-### Installation
+- **Python:** 3.9 – 3.13
+- **Dependency Injector:** 4.41.x – 4.48.x
+- **Structlog:** 24.1.x – 24.4.x
+- **Pydantic:** 2.11.x – 2.12.x
 
-```bash
-pip install signal-client
-```
+The runtime refuses to start when these versions drift. Override checks only if you fully control deployment boundaries.
 
-### Quick Example
+## Learn more
 
-Here is a simple "ping-pong" bot:
+- Documentation hub: https://cornellsh.github.io/signal-client/
+- Use cases & architecture: [Overview](https://cornellsh.github.io/signal-client/overview/) · [Architecture](https://cornellsh.github.io/signal-client/architecture/)
+- Command patterns: [Writing Async Commands](https://cornellsh.github.io/signal-client/guides/writing-async-commands/)
 
-```python
-# main.py
-import asyncio
-from signal_client import SignalClient, Command, Context
-
-# 1. Define a command
-class PingCommand:
-    triggers = ["!ping"]
-    whitelisted = []  # Optional: Restrict to specific users/groups
-    case_sensitive = False  # Optional: Make triggers case-sensitive
-    async def handle(self, context: Context) -> None:
-        await context.reply("Pong!")
-
-# 2. Configure and run the client
-async def main():
-    CONFIG = {
-        "signal_service": "http://localhost:8080",
-        "phone_number": "+1234567890",  # Your bot's number
-    }
-    client = SignalClient(CONFIG)
-    client.register(PingCommand())
-    await client.start()
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-## Local Development
-
-To contribute to this project, follow these steps to set up your local development environment.
-
-### Prerequisites
-
-- [Poetry](https://python-poetry.org/) for dependency management.
-- [pre-commit](https://pre-commit.com/) for code quality checks.
-
-### Setup
-
-1.  **Clone the repository:**
-
-    ```bash
-    git clone https://github.com/cornellshakh/signal_client.git
-    cd signal_client
-    ```
-
-2.  **Install dependencies:**
-
-    Poetry will create a virtual environment and install all the required dependencies, including development tools.
-
-    ```bash
-    poetry install
-    ```
-
-3.  **Set up pre-commit hooks:**
-
-    This will run linting and formatting checks automatically before each commit.
-
-    ```bash
-    poetry run pre-commit install
-    ```
-
-### Running Tests
-
-To run the test suite, use the following command:
-
-```bash
-poetry run pytest
-```
-
-## Full Documentation
-
-For a complete guide to the library's architecture, core concepts, and a full API reference, please see our **[Comprehensive Documentation](./docs/README.md)**.
+Maintained by [@cornellsh](https://github.com/cornellsh). If Signal Client powers something cool, open a discussion or drop a note in the issue tracker—I’d love to feature it.

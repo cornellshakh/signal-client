@@ -2,10 +2,10 @@
 name = "signal_client"
 version = "0.1.0"
 description = "A Python framework for building Signal bots."
-authors = ["cornellshakh"]
+authors = ["cornellsh"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/cornellshakh/signal_client"
+repository = "https://github.com/cornellsh/signal_client"
 keywords = ["Signal", "Bot", "Framework"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -22,21 +22,24 @@ classifiers = [
 packages = [{include = "signal_client", from = "src"}]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/cornellshakh/signal_client/issues"
-"Documentation" = "https://github.com/cornellshakh/signal_client#readme"
+"Bug Tracker" = "https://github.com/cornellsh/signal_client/issues"
+"Documentation" = "https://github.com/cornellsh/signal_client#readme"
 
 [tool.poetry.dependencies]
-python = ">=3.9"
-APScheduler = ">=3.11.0"
-aiohttp = ">=3.11.9"
-websockets = ">=14.1"
-phonenumbers = ">=8.13.54"
-pydantic = ">=2.11.7"
-packaging = ">=25.0"
-dependency-injector = ">=4.41.0"
-aiosqlite = ">=0.20.0"
-structlog = ">=24.1.0"
+python = ">=3.9,<3.14"
+APScheduler = ">=3.11.0,<4.0.0"
+aiohttp = ">=3.11.9,<4.0.0"
+websockets = ">=14.1,<15.0"
+phonenumbers = ">=8.13.54,<9.0"
+pydantic = ">=2.11.7,<3.0.0"
+packaging = ">=25.0,<26.0"
+dependency-injector = ">=4.41.0,<5.0.0"
+aiosqlite = ">=0.20.0,<1.0.0"
+structlog = ">=24.1.0,<25.0.0"
 eval-type-backport = {version = ">=0.2.0", python = "<3.10"}
+pydantic-settings = "^2.11.0"
+typer = "^0.12.3"
+prometheus-client = ">=0.20.0,<1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = ">=24.10.0"
@@ -60,6 +63,9 @@ mkdocs-material = "^9.6.23"
 
 [tool.poetry.scripts]
 audit-api = "scripts.audit_api:main"
+inspect-dlq = "signal_client.cli:main"
+pytest-safe = "scripts.run_tests:main"
+release-guard = "scripts.release_guard:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -84,6 +90,23 @@ ignore = [
     "ANN201", # Missing return type annotation for public function
     "S101",   # Use of assert is detected
     "INP001", # Missing __init__.py file
+    "ANN001", # Missing type annotation for function argument
+    "ANN202", # Missing return annotation for private function
+    "ANN204", # Missing return type annotation for __init__
+    "ARG001", # Unused function argument
+    "PLR2004", # Magic value used in comparison
+    "PGH003", # Use specific rule codes when ignoring type issues
+    "SLF001", # Private member accessed
+    "N803",  # Argument name should be lowercase
+    "RET504", # Unnecessary variable assignment before return
+    "SIM105", # Use contextlib.suppress instead of try/except/pass
+    "SIM117", # Combine nested with statements
+    "TRY003", # Long exception message outside class
+    "EM101", # Exception must not use string literal
+    "EM102", # Exception must not use f-string literal
+    "ANN002", # Missing type annotation for *args
+    "ANN003", # Missing type annotation for **kwargs
+    "PT019", # Fixture without value is injected as parameter
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]

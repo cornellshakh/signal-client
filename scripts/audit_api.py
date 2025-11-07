@@ -26,7 +26,7 @@ from signal_client.infrastructure.api_clients import (  # noqa: E402
     sticker_packs_client,
 )
 
-# A mapping from the client module to the tag used in swagger.json
+# A mapping from the client module to the tag used in cli_rest_api_swagger.json
 CLIENT_TAG_MAPPING = {
     "accounts_client": "Accounts",
     "attachments_client": "Attachments",
@@ -52,7 +52,7 @@ def snake_to_camel(snake_case_string: str) -> str:
 
 def get_swagger_spec(project_root: Path) -> dict[str, Any]:
     """Loads the swagger specification from the project root."""
-    swagger_file = project_root / "swagger.json"
+    swagger_file = project_root / "cli_rest_api_swagger.json"
     with swagger_file.open() as f:
         return json.load(f)
 

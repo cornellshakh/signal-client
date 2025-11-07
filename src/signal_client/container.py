@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .context import Context
     from .infrastructure.api_clients.base_client import ClientConfig
 
+from .config import Settings
 from .entities import ContextDependencies
 from .infrastructure.api_clients import (
     AccountsClient,
@@ -34,72 +35,42 @@ from .services.dead_letter_queue import DeadLetterQueue
 from .services.lock_manager import LockManager
 from .services.message_parser import MessageParser
 from .services.message_service import MessageService
+from .services.models import QueuedMessage
 from .services.rate_limiter import RateLimiter
 from .services.worker_pool_manager import WorkerPoolManager
 
 
-class Container(containers.DeclarativeContainer):
-    config = providers.Configuration(
-        default={
-            "api_retries": 3,
-            "api_backoff_factor": 0.5,
-            "api_timeout": 30,
-            "queue_size": 1000,
-            "rate_limit": 50,
-            "rate_limit_period": 1,
-            "circuit_breaker_failure_threshold": 5,
-            "circuit_breaker_reset_timeout": 30,
-            "circuit_breaker_failure_rate_threshold": 0.5,
-            "circuit_breaker_min_requests_for_rate_calc": 10,
-            "storage_type": "sqlite",
-            "redis_host": "localhost",
-            "redis_port": 6379,
-            "sqlite_database": "signal_client.db",
-            "dlq_name": "signal_client_dlq",
-        }
-    )
+class StorageContainer(containers.DeclarativeContainer):
+    settings = providers.Dependency(instance_of=Settings)
 
     storage = providers.Selector(
-        config.storage_type,
+        settings.provided.storage_type,
         sqlite=providers.Singleton(
             SQLiteStorage,
-            database=config.sqlite_database,
+            database=settings.provided.sqlite_database,
         ),
         redis=providers.Singleton(
             RedisStorage,
-            host=config.redis_host,
-            port=config.redis_port,
+            host=settings.provided.redis_host,
+            port=settings.provided.redis_port,
         ),
     )
 
-    circuit_breaker = providers.Singleton(
-        CircuitBreaker,
-        failure_threshold=config.circuit_breaker_failure_threshold,
-        reset_timeout=config.circuit_breaker_reset_timeout,
-        failure_rate_threshold=config.circuit_breaker_failure_rate_threshold,
-        min_requests_for_rate_calc=config.circuit_breaker_min_requests_for_rate_calc,
-    )
 
-    rate_limiter = providers.Singleton(
-        RateLimiter,
-        rate_limit=config.rate_limit,
-        period=config.rate_limit_period,
-    )
-
-    message_queue: providers.Singleton[asyncio.Queue[str]] = providers.Singleton(
-        asyncio.Queue,
-        maxsize=config.queue_size,
-    )
+class APIClientContainer(containers.DeclarativeContainer):
+    settings = providers.Dependency(instance_of=Settings)
+    circuit_breaker = providers.Dependency(instance_of=CircuitBreaker)
+    rate_limiter = providers.Dependency(instance_of=RateLimiter)
 
     session = providers.Singleton(aiohttp.ClientSession)
 
     client_config: providers.Factory[ClientConfig] = providers.Factory(
         "signal_client.infrastructure.api_clients.base_client.ClientConfig",
         session=session,
-        base_url=config.base_url,
-        retries=config.api_retries,
-        backoff_factor=config.api_backoff_factor,
-        timeout=config.api_timeout,
+        base_url=settings.provided.base_url,
+        retries=settings.provided.api_retries,
+        backoff_factor=settings.provided.api_backoff_factor,
+        timeout=settings.provided.api_timeout,
         rate_limiter=rate_limiter,
         circuit_breaker=circuit_breaker,
     )
@@ -124,16 +95,30 @@ class Container(containers.DeclarativeContainer):
         StickerPacksClient, client_config=client_config
     )
 
+
+class ServicesContainer(containers.DeclarativeContainer):
+    settings = providers.Dependency(instance_of=Settings)
+    storage_container = providers.DependenciesContainer()
+    api_client_container = providers.DependenciesContainer()
+
+    message_queue: providers.Singleton[asyncio.Queue[QueuedMessage]] = (
+        providers.Singleton(
+            asyncio.Queue,
+            maxsize=settings.provided.queue_size,
+        )
+    )
+
     websocket_client = providers.Singleton(
         WebSocketClient,
-        signal_service_url=config.signal_service,
-        phone_number=config.phone_number,
+        signal_service_url=settings.provided.signal_service,
+        phone_number=settings.provided.phone_number,
     )
 
     dead_letter_queue = providers.Singleton(
         DeadLetterQueue,
-        storage=storage,
-        queue_name=config.dlq_name,
+        storage=storage_container.storage,
+        queue_name=settings.provided.dlq_name,
+        max_retries=settings.provided.dlq_max_retries,
     )
 
     message_service = providers.Singleton(
@@ -141,6 +126,8 @@ class Container(containers.DeclarativeContainer):
         websocket_client=websocket_client,
         queue=message_queue,
         dead_letter_queue=dead_letter_queue,
+        enqueue_timeout=settings.provided.queue_put_timeout,
+        drop_oldest_on_timeout=settings.provided.queue_drop_oldest_on_timeout,
     )
 
     message_parser = providers.Singleton(MessageParser)
@@ -149,21 +136,21 @@ class Container(containers.DeclarativeContainer):
 
     context_dependencies = providers.Factory(
         ContextDependencies,
-        accounts_client=accounts_client,
-        attachments_client=attachments_client,
-        contacts_client=contacts_client,
-        devices_client=devices_client,
-        general_client=general_client,
-        groups_client=groups_client,
-        identities_client=identities_client,
-        messages_client=messages_client,
-        profiles_client=profiles_client,
-        reactions_client=reactions_client,
-        receipts_client=receipts_client,
-        search_client=search_client,
-        sticker_packs_client=sticker_packs_client,
+        accounts_client=api_client_container.accounts_client,
+        attachments_client=api_client_container.attachments_client,
+        contacts_client=api_client_container.contacts_client,
+        devices_client=api_client_container.devices_client,
+        general_client=api_client_container.general_client,
+        groups_client=api_client_container.groups_client,
+        identities_client=api_client_container.identities_client,
+        messages_client=api_client_container.messages_client,
+        profiles_client=api_client_container.profiles_client,
+        reactions_client=api_client_container.reactions_client,
+        receipts_client=api_client_container.receipts_client,
+        search_client=api_client_container.search_client,
+        sticker_packs_client=api_client_container.sticker_packs_client,
         lock_manager=lock_manager,
-        phone_number=config.phone_number,
+        phone_number=settings.provided.phone_number,
     )
 
     context: providers.Factory[Context] = providers.Factory(
@@ -176,5 +163,42 @@ class Container(containers.DeclarativeContainer):
         context_factory=context.provider,
         queue=message_queue,
         message_parser=message_parser,
-        pool_size=config.worker_pool_size,
+        pool_size=settings.provided.worker_pool_size,
+    )
+
+
+class Container(containers.DeclarativeContainer):
+    settings = providers.Singleton(Settings)
+
+    circuit_breaker = providers.Singleton(
+        CircuitBreaker,
+        failure_threshold=settings.provided.circuit_breaker_failure_threshold,
+        reset_timeout=settings.provided.circuit_breaker_reset_timeout,
+        failure_rate_threshold=settings.provided.circuit_breaker_failure_rate_threshold,
+        min_requests_for_rate_calc=settings.provided.circuit_breaker_min_requests_for_rate_calc,
+    )
+
+    rate_limiter = providers.Singleton(
+        RateLimiter,
+        rate_limit=settings.provided.rate_limit,
+        period=settings.provided.rate_limit_period,
+    )
+
+    storage_container: providers.Container[StorageContainer] = providers.Container(
+        StorageContainer,
+        settings=settings,
+    )
+
+    api_client_container: providers.Container[APIClientContainer] = providers.Container(
+        APIClientContainer,
+        settings=settings,
+        circuit_breaker=circuit_breaker,
+        rate_limiter=rate_limiter,
+    )
+
+    services_container: providers.Container[ServicesContainer] = providers.Container(
+        ServicesContainer,
+        settings=settings,
+        storage_container=storage_container,
+        api_client_container=api_client_container,
     )

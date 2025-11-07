@@ -4,6 +4,8 @@ import asyncio
 import time
 from collections import deque
 
+from signal_client.metrics import RATE_LIMITER_WAIT
+
 
 class RateLimiter:
     """A rate limiter to avoid exceeding API limits."""
@@ -27,4 +29,5 @@ class RateLimiter:
                     return
 
                 sleep_time = self._timestamps[0] + self.period - now
+                RATE_LIMITER_WAIT.observe(max(sleep_time, 0.0))
                 await asyncio.sleep(sleep_time)

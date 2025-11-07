@@ -8,6 +8,8 @@ from enum import Enum
 
 import structlog
 
+from signal_client.metrics import CIRCUIT_BREAKER_STATE
+
 log = structlog.get_logger()
 
 
@@ -44,6 +46,7 @@ class CircuitBreaker:
     @asynccontextmanager
     async def guard(self, endpoint_key: str) -> AsyncGenerator[None, None]:
         endpoint_state = self._endpoint_states.setdefault(endpoint_key, EndpointState())
+        self._record_state(endpoint_key, endpoint_state.state)
 
         if endpoint_state.state == CircuitBreakerState.OPEN:
             if (
@@ -52,6 +55,7 @@ class CircuitBreaker:
             ):
                 endpoint_state.state = CircuitBreakerState.HALF_OPEN
                 log.info("Circuit breaker is now half-open.", endpoint=endpoint_key)
+                self._record_state(endpoint_key, endpoint_state.state)
             else:
                 msg = f"Circuit breaker is open for endpoint: {endpoint_key}."
                 raise ConnectionAbortedError(msg)
@@ -89,6 +93,7 @@ class CircuitBreaker:
         log.warning(
             "Circuit breaker has been tripped and is now open.", endpoint=endpoint_key
         )
+        self._record_state(endpoint_key, endpoint_state.state)
 
     def _reset(self, endpoint_key: str, endpoint_state: EndpointState) -> None:
         endpoint_state.state = CircuitBreakerState.CLOSED
@@ -99,3 +104,12 @@ class CircuitBreaker:
         log.info(
             "Circuit breaker has been reset and is now closed.", endpoint=endpoint_key
         )
+        self._record_state(endpoint_key, endpoint_state.state)
+
+    def _record_state(self, endpoint_key: str, state: CircuitBreakerState) -> None:
+        for candidate in CircuitBreakerState:
+            value = 1 if candidate == state else 0
+            CIRCUIT_BREAKER_STATE.labels(
+                endpoint=endpoint_key,
+                state=candidate.value,
+            ).set(value)

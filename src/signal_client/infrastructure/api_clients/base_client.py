@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -15,6 +16,7 @@ from signal_client.exceptions import (
     RateLimitError,
     ServerError,
 )
+from signal_client.metrics import API_CLIENT_PERFORMANCE
 
 if TYPE_CHECKING:
     from signal_client.services.circuit_breaker import CircuitBreaker
@@ -28,34 +30,54 @@ HTTP_STATUS_CONFLICT = 409
 HTTP_STATUS_TOO_MANY_REQUESTS = 429
 HTTP_STATUS_SERVER_ERROR = 500
 
-ERROR_MESSAGE_MAP = {
-    "User is not a group member": ConflictError,
-    "Username already taken": ConflictError,
-    "No group with that id found": NotFoundError,
-    "No attachment with that name found": NotFoundError,
-    "No contact with that id (...) found": NotFoundError,
-    "Rate limit exceeded...": RateLimitError,
-    "Couldn't get list of accounts...": ServerError,
-    "Couldn't get list of attachments...": ServerError,
-    "Couldn't detect MIME type for attachment": ServerError,
-    "Couldn't serve attachment - please try again later": ServerError,
+ERROR_CODE_MAP: dict[str, tuple[type[APIError], str | None]] = {
+    "USER_NOT_GROUP_MEMBER": (
+        ConflictError,
+        "docs.signal-client.dev/errors#user-not-a-group-member",
+    ),
+    "USERNAME_ALREADY_TAKEN": (
+        ConflictError,
+        "docs.signal-client.dev/errors#username-already-taken",
+    ),
+    "GROUP_NOT_FOUND": (
+        NotFoundError,
+        "docs.signal-client.dev/errors#group-not-found",
+    ),
+    "ATTACHMENT_NOT_FOUND": (
+        NotFoundError,
+        "docs.signal-client.dev/errors#attachment-not-found",
+    ),
+    "CONTACT_NOT_FOUND": (
+        NotFoundError,
+        "docs.signal-client.dev/errors#contact-not-found",
+    ),
+    "RATE_LIMIT_EXCEEDED": (
+        RateLimitError,
+        "docs.signal-client.dev/errors#rate-limit-exceeded",
+    ),
+    "INTERNAL_SERVER_ERROR": (
+        ServerError,
+        "docs.signal-client.dev/errors#server-error",
+    ),
 }
 
-ERROR_DOCS_MAP = {
-    "User is not a group member": (
-        "docs.signal-client.dev/errors#user-not-a-group-member"
+ERROR_STATUS_MAP: dict[int, tuple[type[APIError], str]] = {
+    HTTP_STATUS_UNAUTHORIZED: (
+        AuthenticationError,
+        "docs.signal-client.dev/errors#authentication-error",
     ),
-    "Username already taken": "docs.signal-client.dev/errors#username-already-taken",
-    "No group with that id found": (
-        "docs.signal-client.dev/errors#no-group-with-that-id-found"
+    HTTP_STATUS_NOT_FOUND: (
+        NotFoundError,
+        "docs.signal-client.dev/errors#not-found-error",
     ),
-    "No attachment with that name found": (
-        "docs.signal-client.dev/errors#no-attachment-with-that-name-found"
+    HTTP_STATUS_CONFLICT: (
+        ConflictError,
+        "docs.signal-client.dev/errors#conflict-error",
     ),
-    "No contact with that id (...) found": (
-        "docs.signal-client.dev/errors#no-contact-with-that-id-found"
+    HTTP_STATUS_TOO_MANY_REQUESTS: (
+        RateLimitError,
+        "docs.signal-client.dev/errors#rate-limit-error",
     ),
-    "Rate limit exceeded...": "docs.signal-client.dev/errors#rate-limit-exceeded",
 }
 
 
@@ -90,55 +112,88 @@ class BaseClient:
         self, response: aiohttp.ClientResponse
     ) -> dict[str, Any] | list[dict[str, Any]] | bytes:
         if response.status >= HTTP_STATUS_BAD_REQUEST:
-            body = await response.text()
-            for msg, exc in ERROR_MESSAGE_MAP.items():
-                if msg in body:
-                    docs_url = ERROR_DOCS_MAP.get(msg)
-                    raise exc(
-                        status_code=response.status,
-                        response_body=body,
-                        docs_url=docs_url,
-                    )
-
-            if response.status == HTTP_STATUS_UNAUTHORIZED:
-                raise AuthenticationError(
-                    status_code=response.status,
-                    response_body=body,
-                    docs_url="docs.signal-client.dev/errors#authentication-error",
-                )
-            if response.status == HTTP_STATUS_NOT_FOUND:
-                raise NotFoundError(
-                    status_code=response.status,
-                    response_body=body,
-                    docs_url="docs.signal-client.dev/errors#not-found-error",
-                )
-            if response.status == HTTP_STATUS_CONFLICT:
-                raise ConflictError(
-                    status_code=response.status,
-                    response_body=body,
-                    docs_url="docs.signal-client.dev/errors#conflict-error",
-                )
-            if response.status == HTTP_STATUS_TOO_MANY_REQUESTS:
-                raise RateLimitError(
-                    status_code=response.status,
-                    response_body=body,
-                    docs_url="docs.signal-client.dev/errors#rate-limit-error",
-                )
-            if response.status >= HTTP_STATUS_SERVER_ERROR:
-                raise ServerError(
-                    status_code=response.status,
-                    response_body=body,
-                    docs_url="docs.signal-client.dev/errors#server-error",
-                )
-            raise APIError(
-                status_code=response.status,
-                response_body=body,
-                docs_url="docs.signal-client.dev/errors#api-error",
+            payload, error_message = await self._extract_error_payload(response)
+            normalized_code = self._normalize_error_code(payload)
+            response_body = self._serialize_error_body(payload, error_message)
+            error_text = error_message or normalized_code or f"HTTP {response.status}"
+            self._raise_for_error(
+                response.status, error_text, response_body, normalized_code
             )
 
         if response.content_type == "application/json":
             return await response.json()
         return await response.read()
+
+    async def _extract_error_payload(
+        self, response: aiohttp.ClientResponse
+    ) -> tuple[object | None, str]:
+        try:
+            payload = await response.json()
+        except aiohttp.ContentTypeError:
+            text_payload = await response.text()
+            return None, text_payload
+
+        if isinstance(payload, dict):
+            message = str(payload.get("error") or payload.get("message") or "")
+            return payload, message
+        if isinstance(payload, list):
+            serialized = json.dumps(payload)
+            return payload, serialized
+        return payload, str(payload)
+
+    @staticmethod
+    def _normalize_error_code(payload: object | None) -> str | None:
+        if isinstance(payload, dict):
+            raw_code = payload.get("code")
+            if isinstance(raw_code, str):
+                return raw_code.strip().replace("-", "_").replace(" ", "_").upper()
+        return None
+
+    @staticmethod
+    def _serialize_error_body(payload: object | None, fallback: str) -> str:
+        if isinstance(payload, (dict, list)):
+            return json.dumps(payload)
+        return fallback
+
+    def _raise_for_error(
+        self,
+        status: int,
+        error_text: str,
+        response_body: str,
+        normalized_code: str | None,
+    ) -> None:
+        if normalized_code and normalized_code in ERROR_CODE_MAP:
+            exc_cls, docs_url = ERROR_CODE_MAP[normalized_code]
+            raise exc_cls(
+                message=error_text,
+                status_code=status,
+                response_body=response_body,
+                docs_url=docs_url,
+            )
+
+        if status in ERROR_STATUS_MAP:
+            exc_cls, docs_url = ERROR_STATUS_MAP[status]
+            raise exc_cls(
+                message=error_text,
+                status_code=status,
+                response_body=response_body,
+                docs_url=docs_url,
+            )
+
+        if status >= HTTP_STATUS_SERVER_ERROR:
+            raise ServerError(
+                message=error_text,
+                status_code=status,
+                response_body=response_body,
+                docs_url="docs.signal-client.dev/errors#server-error",
+            )
+
+        raise APIError(
+            message=error_text,
+            status_code=status,
+            response_body=response_body,
+            docs_url="docs.signal-client.dev/errors#api-error",
+        )
 
     async def _make_request(
         self,
@@ -151,10 +206,11 @@ class BaseClient:
         if self._rate_limiter:
             await self._rate_limiter.acquire()
 
-        if self._circuit_breaker:
-            async with self._circuit_breaker.guard(path):
-                return await self._send_request_with_retries(method, url, **kwargs)
-        return await self._send_request_with_retries(method, url, **kwargs)
+        with API_CLIENT_PERFORMANCE.time():
+            if self._circuit_breaker:
+                async with self._circuit_breaker.guard(path):
+                    return await self._send_request_with_retries(method, url, **kwargs)
+            return await self._send_request_with_retries(method, url, **kwargs)
 
     async def _send_single_request(
         self,
@@ -198,5 +254,7 @@ class BaseClient:
                     "Request failed after max retries",
                     attempt=attempt,
                 )
+        if last_exc:
+            raise last_exc
         msg = f"Request failed after {self._retries} retries"
-        raise APIError(msg) from last_exc
+        raise APIError(msg)

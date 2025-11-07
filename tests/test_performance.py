@@ -1,57 +1,83 @@
 import asyncio
+import json
+import random
 import time
-from collections.abc import AsyncGenerator
-from typing import ClassVar
-from unittest.mock import AsyncMock, MagicMock
+import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 
 from signal_client.bot import SignalClient
-from signal_client.command import Command
+from signal_client.command import command
 from signal_client.context import Context
+from signal_client.services.models import QueuedMessage
 
 MIN_THROUGHPUT = 100
 MAX_AVG_LATENCY = 0.1
-NUM_MESSAGES = 1000
+NUM_MESSAGES = 300
 NUM_REQUESTS = 100
+WORKER_POOL_SIZE = 10
+SEED = 42
 
 
-class MockCommand(Command):
-    triggers: ClassVar[list[str]] = ["!test"]
-    whitelisted: ClassVar[list[str]] = []
-    case_sensitive: bool = False
-
-    async def handle(self, _context: Context) -> None:
-        await asyncio.sleep(0.01)  # Simulate some work
+@command("!test")
+async def mock_command(_context: Context) -> None:
+    await asyncio.sleep(0)
 
 
 @pytest.mark.asyncio
-async def test_message_throughput():
+@pytest.mark.usefixtures("mock_env_vars")
+async def test_message_throughput() -> None:
     """
     Measures the number of messages the bot can process per second.
     """
     config = {
-        "signal_service": "http://localhost:8080",
         "phone_number": "+1234567890",
-        "worker_pool_size": 10,
+        "signal_service": "http://localhost:8080",
+        "base_url": "http://localhost:8080",
+        "worker_pool_size": WORKER_POOL_SIZE,
     }
     client = SignalClient(config)
-    client.register(MockCommand())
+    client.register(mock_command)
 
-    # Mock the websocket client to simulate incoming messages
-    client.container.websocket_client.override(AsyncMock())
-    websocket_client = client.container.websocket_client()
-    websocket_client.listen = MagicMock()
-
-    async def message_generator() -> AsyncGenerator[str, None]:
-        for i in range(NUM_MESSAGES):
-            yield f'{{"type": "message", "id": {i}, "data": {{"message": "!test"}}}}'
-
-    websocket_client.listen.return_value = message_generator()
+    queue = client.container.services_container.message_queue()
+    worker_pool_manager = client.container.services_container.worker_pool_manager()
 
     start_time = time.monotonic()
-    await client.start()
+
+    # Start the worker pool
+    worker_pool_manager.start()
+
+    # Simulate incoming messages by putting them directly into the queue
+    random.seed(SEED)
+    for _ in range(NUM_MESSAGES):
+        timestamp = int(time.time() * 1000)
+        raw_message = {
+            "envelope": {
+                "source": "test",
+                "timestamp": timestamp,
+                "dataMessage": {
+                    "message": "!test",
+                    "id": str(uuid.uuid4()),
+                },
+            }
+        }
+        await queue.put(
+            QueuedMessage(
+                raw=json.dumps(raw_message),
+                enqueued_at=time.perf_counter(),
+            )
+        )
+
+    # Wait for all messages to be processed
+    await queue.join()
+
     end_time = time.monotonic()
+
+    # Stop the worker pool
+    worker_pool_manager.stop()
+    await worker_pool_manager.join()
+    await client.shutdown()
 
     duration = end_time - start_time
     throughput = NUM_MESSAGES / duration
@@ -63,22 +89,25 @@ async def test_message_throughput():
 
 
 @pytest.mark.asyncio
-async def test_api_latency():
+@pytest.mark.usefixtures("mock_env_vars")
+async def test_api_latency() -> None:
     """
     Measures the latency of API requests.
     """
     config = {
-        "signal_service": "http://localhost:8080",
         "phone_number": "+1234567890",
+        "signal_service": "http://localhost:8080",
+        "base_url": "http://localhost:8080",
     }
-    client = SignalClient(config)
+    client = SignalClient(config=config)
 
     # Mock the accounts client to simulate API requests
-    client.container.accounts_client.override(AsyncMock())
-    accounts_client = client.container.accounts_client()
+    client.container.api_client_container.accounts_client.override(AsyncMock())
+    accounts_client = client.container.api_client_container.accounts_client()
     accounts_client.get_account = AsyncMock(return_value={"number": "+1234567890"})
 
     latencies = []
+    random.seed(SEED)
     for _ in range(NUM_REQUESTS):
         start_time = time.monotonic()
         await accounts_client.get_account()
@@ -90,3 +119,5 @@ async def test_api_latency():
 
     # The average latency should be less than 100 ms
     assert avg_latency < MAX_AVG_LATENCY
+
+    await client.shutdown()

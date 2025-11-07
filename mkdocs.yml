@@ -1,19 +1,32 @@
 site_name: signal-client
+site_url: https://cornellsh.github.io/signal-client/
+repo_name: cornellsh/signal-client
+repo_url: https://github.com/cornellsh/signal-client
 theme:
   name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.tabs
 plugins:
   - search
-  - mkdocs-jupyter
 nav:
   - Home: index.md
-  - Architecture: 01_architecture.md
-  - Core Concepts: 02_core_concepts.md
-  - Domain Layer: 03_domain_layer.md
-  - Services Layer: 04_services_layer.md
-  - Infrastructure Layer: 05_infrastructure_layer.md
-  - API Reference: 06_api_reference.md
-  - Getting Started: 07_getting_started_tutorial.md
-  - Configuration: 08_configuration.md
-  - Coding Standards: coding_standards.md
-  - Writing Async Commands: writing_async_commands.md
-  - Interactive Tutorial: 13_interactive_tutorial.ipynb
+  - Discover:
+      - Overview: overview.md
+      - Use Cases: use-cases.md
+      - Feature Tour: feature-tour.md
+  - Build:
+      - Quickstart: quickstart.md
+      - Architecture: architecture.md
+      - Configuration: configuration.md
+      - Observability: observability.md
+      - Operations: operations.md
+      - API Reference: api-reference.md
+      - Guides:
+          - Writing Async Commands: guides/writing-async-commands.md
+  - Standards:
+      - Coding Standards: coding_standards.md
+      - Production Secrets: production_secrets.md
+  - Appendix:
+      - TEE Privacy Architecture: tee_privacy_architecture.md

@@ -110,3 +110,7 @@ class ServerError(APIError):
 
 class UnsupportedMessageError(SignalClientError):
     """Custom exception for unsupported message types."""
+
+
+class ConfigurationError(Exception):
+    """Raised when there is a configuration error."""

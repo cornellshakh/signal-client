@@ -29,23 +29,36 @@
    ```
 3. **Register a simple command.**
    ```python
-   from signal_client import SignalClient, Context, command
+   import asyncio
+   from signal_client.bot import SignalClient
+   from signal_client.context import Context
+   from signal_client.command import Command
    from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
+   async def main():
+       # Initialize the Signal Client
+       client = SignalClient()
+       
+       # Create a command that responds to "!ping"
+       ping_command = Command(triggers=["!ping"])
+       
+       async def ping_handler(context: Context) -> None:
+           """Reply with Pong."""
+           response = SendMessageRequest(
+               message="Pong! 🏓",
+               recipients=[]  # Empty list replies to sender
+           )
+           await context.reply(response)
+       
+       # Register the command
+       ping_command.with_handler(ping_handler)
+       client.register(ping_command)
+       
+       # Start the bot
+       await client.start()
 
-   @command("!ping", description="Reply with Pong")
-   async def ping(context: Context) -> None:
-       await context.reply(SendMessageRequest(message="Pong!", recipients=[]))
-
-
-   client = SignalClient({
-       "phone_number": "+1234567890",
-       "signal_service": "http://localhost:8080",
-       "base_url": "http://localhost:8080",
-       "worker_pool_size": 4,
-       "queue_size": 200,
-   })
-   client.register(ping)
+   if __name__ == "__main__":
+       asyncio.run(main())
    ```
 
 Ready to keep going? Walk through the full setup in the [Quickstart guide](https://cornellsh.github.io/signal-client/quickstart/).

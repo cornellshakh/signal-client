@@ -20,7 +20,13 @@ Commands in Signal Client are created using the `Command` class and registered w
 
     async def greet_handler(context: Context) -> None:
         """Greet the user."""
-        await context.reply("Hey there! 👋")
+        from signal_client.infrastructure.schemas.requests import SendMessageRequest
+        
+        response = SendMessageRequest(
+            message="Hey there! 👋",
+            recipients=[]  # Empty list replies to sender
+        )
+        await context.reply(response)
 
     # Attach the handler to the command
     greet_command.with_handler(greet_handler)
@@ -57,7 +63,13 @@ greet_command = Command(triggers=["greet", "hello"])
 
 async def greet_handler(context: Context) -> None:
     """Greet the user."""
-    await context.reply("Hey there! 👋")
+    from signal_client.infrastructure.schemas.requests import SendMessageRequest
+    
+    response = SendMessageRequest(
+        message="Hey there! 👋",
+        recipients=[]  # Empty list replies to sender
+    )
+    await context.reply(response)
 
 greet_command.with_handler(greet_handler)
 client.register(greet_command)
@@ -82,10 +94,14 @@ if __name__ == "__main__":
     :::python
     async def ticket_ack(context: Context) -> None:
         # Access message data through context.message
-        sender = context.message.source_number
-        await context.reply(
-            f"Ticket acknowledged from {sender} ✅"
+        sender = context.message.source
+        
+        from signal_client.infrastructure.schemas.requests import SendMessageRequest
+        response = SendMessageRequest(
+            message=f"Ticket acknowledged from {sender} ✅",
+            recipients=[]  # Reply to sender
         )
+        await context.reply(response)
         # Metrics and logging can be added through dependency injection
 ///
 

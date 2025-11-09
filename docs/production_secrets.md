@@ -1,593 +1,417 @@
 ---
-title: Security & Credential Management
-summary: Complete guide to securing Signal Client deployments, managing credentials, and implementing security best practices.
+title: Security & Secrets
+summary: Keep your Signal bot secure with proper credential management and security practices.
 order: 301
 ---
 
-# Security & Credential Management
+# Security & Secrets
 
-This guide covers the critical security considerations for deploying Signal Client in production, including credential management, threat modeling, and security best practices.
-
-!!! danger "Security Warning"
-    Signal Client handles sensitive cryptographic credentials that provide access to your Signal account. Improper handling can lead to account compromise, message interception, or unauthorized access to private communications.
+Essential security practices for protecting your Signal bot and keeping your credentials safe.
 
 ## Understanding Signal Credentials
 
-### What's in the Credential Bundle
-
-When you link a Signal device, several critical files are created in the secrets directory:
+When you link your Signal bot, important security files are created:
 
 ```bash
 # Default location: ~/.local/share/signal-api/
 ├── data/
 │   └── +1234567890/           # Your phone number
-│       ├── account.json       # Account configuration
+│       ├── account.json       # Account settings
 │       ├── identity.json      # Identity keys (CRITICAL)
-│       ├── sessions/          # Session keys for contacts
-│       ├── groups/            # Group membership data
-│       └── attachments/       # Cached attachments
-└── logs/                      # signal-cli logs
+│       ├── sessions/          # Contact encryption keys
+│       └── groups/            # Group data
 ```
 
-**Critical Files:**
-- `identity.json`: Contains your Signal identity keys. **Loss = permanent account lockout**
-- `account.json`: Account metadata and configuration
-- `sessions/`: Encrypted session keys for all your contacts
+!!! danger "Protect Your Identity Keys"
+    The `identity.json` file contains your Signal identity keys. If lost or stolen:
+    - You'll lose access to your Signal account permanently
+    - Attackers could read your messages and impersonate you
+    - **Always backup these files securely**
 
-### Security Implications
+## Basic Security Setup
 
-!!! danger "Credential Compromise Scenarios"
-    **If credentials are compromised, attackers can:**
-    - Read all your Signal messages (past and future)
-    - Send messages as you to any contact
-    - Join/leave groups on your behalf
-    - Access message history and attachments
-    - Impersonate you in Signal conversations
+### Secure File Permissions
 
-## Secure Storage Strategy
-
-### Development Environment
-
-For development and testing:
+Protect your credential files from other users on your system:
 
 ```bash
-# Create secure directory
-mkdir -p ~/.local/share/signal-api
+# Make signal directory private
 chmod 700 ~/.local/share/signal-api
 
-# Set restrictive permissions on credential files
+# Make all files readable only by you
 find ~/.local/share/signal-api -type f -exec chmod 600 {} \;
-find ~/.local/share/signal-api -type d -exec chmod 700 {} \;
 
-# Verify permissions
+# Verify permissions (should show drwx------ for directories)
 ls -la ~/.local/share/signal-api/
-# Should show: drwx------ (700) for directories
-# Should show: -rw------- (600) for files
 ```
 
-### Production Environment
+### Environment Variables
 
-#### Option 1: Environment Variables
+Never hardcode credentials in your code. Use environment variables:
+
+```python
+# ❌ Don't do this
+phone_number = "+1234567890"
+
+# ✅ Do this instead
+import os
+phone_number = os.getenv("SIGNAL_PHONE_NUMBER")
+```
+
+Create a `.env` file for local development:
 
 ```bash
-# Set credentials as environment variables
-export SIGNAL_CLIENT_PHONE_NUMBER="+1234567890"
-export SIGNAL_CLIENT_SECRETS_DIR="/secure/signal-credentials"
-
-# Or use a .env file (not in version control!)
-echo "SIGNAL_CLIENT_PHONE_NUMBER=+1234567890" > .env
-echo "SIGNAL_CLIENT_SECRETS_DIR=/secure/signal-credentials" >> .env
+# .env (never commit this file!)
+SIGNAL_PHONE_NUMBER=+1234567890
+SIGNAL_CLIENT_REST_API_URL=http://localhost:8080
 ```
 
-#### Option 2: Secure File Storage
+```python
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+phone_number = os.getenv("SIGNAL_PHONE_NUMBER")
+```
+
+**Important:** Add `.env` to your `.gitignore`:
 
 ```bash
-# Create secure directory for credentials
-sudo mkdir -p /secure/signal-credentials
-sudo chown $USER:$USER /secure/signal-credentials
-chmod 700 /secure/signal-credentials
-
-# Copy your credential files
-cp ~/.local/share/signal-cli/data/* /secure/signal-credentials/
-chmod 600 /secure/signal-credentials/*
-
-# Set environment variable
-export SIGNAL_CLIENT_SECRETS_DIR="/secure/signal-credentials"
+echo ".env" >> .gitignore
 ```
 
-#### Option 3: Docker Secrets
+## Production Deployment
+
+### Docker Security
+
+Use proper security practices in Docker:
+
+```dockerfile
+# Dockerfile
+FROM python:3.11-slim
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash signalbot
+USER signalbot
+WORKDIR /home/signalbot
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --user -r requirements.txt
+
+# Copy bot code
+COPY --chown=signalbot:signalbot . .
+
+# Run as non-root
+CMD ["python", "bot.py"]
+```
+
+### Docker Compose with Secrets
 
 ```yaml
 # docker-compose.yml
 version: '3.8'
 services:
-  signal-bot:
-    image: your-signal-bot:latest
-    secrets:
-      - signal_credentials
-    environment:
-      - SIGNAL_CLIENT_SECRETS_DIR=/run/secrets/signal_credentials
+  signal-api:
+    image: bbernhard/signal-cli-rest-api:latest
+    ports:
+      - "8080:8080"
     volumes:
-      - ./bot_data:/app/data
+      - signal-data:/home/.local/share/signal-cli
+    restart: unless-stopped
 
-secrets:
-  signal_credentials:
-    file: ./signal-credentials.tar.gz  # Encrypted archive of credential files
+  signal-bot:
+    build: .
+    environment:
+      - SIGNAL_PHONE_NUMBER=${SIGNAL_PHONE_NUMBER}
+      - SIGNAL_CLIENT_REST_API_URL=http://signal-api:8080
+    restart: unless-stopped
+    depends_on:
+      - signal-api
+
+volumes:
+  signal-data:
 ```
+
+### Server Security
+
+Basic server security for your Signal bot:
 
 ```bash
-# Create encrypted credential archive
-tar -czf signal-credentials.tar.gz -C ~/.local/share/signal-cli/data .
-```
+# Update system packages
+sudo apt update && sudo apt upgrade -y
 
-## Access Controls & Permissions
+# Install fail2ban to prevent brute force attacks
+sudo apt install fail2ban -y
 
-### File System Permissions
-
-```bash
-# Secure the entire Signal directory
-chmod 700 /path/to/signal/credentials
-chown signal-bot:signal-bot /path/to/signal/credentials
-
-# Secure individual files
-find /path/to/signal/credentials -type f -exec chmod 600 {} \;
-find /path/to/signal/credentials -type d -exec chmod 700 {} \;
-
-# Verify no world-readable files
-find /path/to/signal/credentials -perm /o+r -ls
-# Should return nothing
-```
-
-### Container Security
-
-```dockerfile
-# Dockerfile security best practices
-FROM python:3.11-slim
-
-# Create non-root user
-RUN groupadd -r signal && useradd -r -g signal signal
-
-# Create secure directories
-RUN mkdir -p /app/credentials && \
-    chown signal:signal /app/credentials && \
-    chmod 700 /app/credentials
-
-# Switch to non-root user
-USER signal
-
-# Set secure environment
-ENV SIGNAL_CLIENT_SECRETS_DIR=/app/credentials
-ENV PYTHONPATH=/app
-
-WORKDIR /app
-COPY --chown=signal:signal . .
-
-CMD ["python", "bot.py"]
-```
-
-### Network Security
-
-```bash
-# Basic firewall rules for your Signal bot server
-# Allow outbound HTTPS to Signal servers
-sudo ufw allow out 443/tcp
-
-# Allow connection to your signal-cli-rest-api (if on different server)
-sudo ufw allow out 8080/tcp
-
-# Block unnecessary inbound connections
+# Configure firewall (allow only necessary ports)
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-
-# Enable firewall
+sudo ufw allow ssh
+sudo ufw allow 8080  # Only if signal-api needs external access
 sudo ufw enable
+
+# Create dedicated user for the bot
+sudo useradd -m -s /bin/bash signalbot
+sudo su - signalbot
 ```
 
-## Credential Rotation & Lifecycle
+## Backup & Recovery
 
-### Rotation Schedule
+### Backup Your Credentials
 
-| Credential Type | Rotation Frequency | Trigger Events |
-|----------------|-------------------|----------------|
-| Signal Device Link | Every 90 days | Personnel changes, suspected compromise |
-| REST API Access | Every 30 days | Security incidents, maintenance |
-| Container Images | Every release | Code changes, dependency updates |
-| TLS Certificates | Every 90 days | Expiration, CA changes |
-
-### Rotation Procedure
-
-#### 1. Signal Device Re-linking
+**Critical:** Always backup your Signal credentials before deploying:
 
 ```bash
 #!/bin/bash
-# signal-rotation.sh - Rotate Signal device credentials
+# backup-signal-credentials.sh
 
-set -euo pipefail
-
-echo "Starting Signal credential rotation..."
-
-# 1. Backup current credentials
-BACKUP_DIR="/secure/backups/signal-$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="$HOME/signal-backups/$(date +%Y%m%d)"
 mkdir -p "$BACKUP_DIR"
-cp -r "$SIGNAL_CLIENT_SECRETS_DIR" "$BACKUP_DIR/"
 
-# 2. Stop current bot
-kubectl scale deployment signal-bot --replicas=0
+# Backup signal-cli data
+cp -r ~/.local/share/signal-api/data "$BACKUP_DIR/"
 
-# 3. Unlink old device (manual step)
-echo "MANUAL STEP: Unlink old device in Signal app"
-echo "Go to Signal Settings > Linked devices > Remove old device"
-read -p "Press Enter when device is unlinked..."
+# Create encrypted archive
+tar czf "$BACKUP_DIR/signal-credentials.tar.gz" -C "$BACKUP_DIR" data
+rm -rf "$BACKUP_DIR/data"
 
-# 4. Clear old credentials
-rm -rf "$SIGNAL_CLIENT_SECRETS_DIR"/*
+# Encrypt the backup (requires gpg)
+gpg --symmetric --cipher-algo AES256 "$BACKUP_DIR/signal-credentials.tar.gz"
+rm "$BACKUP_DIR/signal-credentials.tar.gz"
 
-# 5. Start fresh linking process
-echo "Starting new device linking..."
-docker run -d --name signal-api-new \
-  -p 8080:8080 \
-  -v "$SIGNAL_CLIENT_SECRETS_DIR:/home/.local/share/signal-cli" \
-  bbernhard/signal-cli-rest-api:latest
-
-# 6. Generate new QR code
-echo "Open: http://localhost:8080/v1/qrcodelink?device_name=signal-bot-$(date +%Y%m%d)"
-read -p "Scan QR code and press Enter when linked..."
-
-# 7. Verify new credentials
-curl -s http://localhost:8080/v1/accounts | jq '.'
-
-# 8. Update secrets in production
-kubectl create secret generic signal-credentials-new \
-  --from-file="$SIGNAL_CLIENT_SECRETS_DIR" \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-# 9. Restart bot with new credentials
-kubectl scale deployment signal-bot --replicas=1
-
-echo "Credential rotation complete!"
+echo "✅ Backup saved to: $BACKUP_DIR/signal-credentials.tar.gz.gpg"
+echo "🔐 Store this file securely and remember your passphrase!"
 ```
 
-#### 2. Automated Rotation with Vault
+### Recovery Process
+
+If you need to restore your credentials:
+
+```bash
+#!/bin/bash
+# restore-signal-credentials.sh
+
+BACKUP_FILE="$1"
+if [ -z "$BACKUP_FILE" ]; then
+    echo "Usage: $0 <backup-file.tar.gz.gpg>"
+    exit 1
+fi
+
+# Decrypt backup
+gpg --decrypt "$BACKUP_FILE" > signal-credentials.tar.gz
+
+# Extract to signal directory
+mkdir -p ~/.local/share/signal-api
+tar xzf signal-credentials.tar.gz -C ~/.local/share/signal-api/
+
+# Set proper permissions
+chmod 700 ~/.local/share/signal-api
+find ~/.local/share/signal-api -type f -exec chmod 600 {} \;
+
+# Clean up
+rm signal-credentials.tar.gz
+
+echo "✅ Credentials restored. Restart your bot."
+```
+
+## Access Control
+
+### Restrict Bot Access
+
+Limit who can use your bot:
 
 ```python
-import hvac
-import schedule
-import time
-from pathlib import Path
+# config.py
+ALLOWED_USERS = [
+    "+1234567890",  # Your number
+    "+0987654321",  # Trusted friend
+]
 
-class SignalCredentialRotator:
-    def __init__(self, vault_url: str, vault_token: str):
-        self.vault_client = hvac.Client(url=vault_url, token=vault_token)
-        
-    def rotate_credentials(self):
-        """Rotate Signal credentials stored in Vault."""
-        try:
-            # 1. Backup current credentials
-            current_creds = self.vault_client.secrets.kv.v2.read_secret_version(
-                path='signal-bot/credentials'
-            )
-            
-            backup_path = f'signal-bot/credentials-backup-{int(time.time())}'
-            self.vault_client.secrets.kv.v2.create_or_update_secret(
-                path=backup_path,
-                secret=current_creds['data']['data']
-            )
-            
-            # 2. Trigger re-linking process
-            self.trigger_relink()
-            
-            # 3. Update Vault with new credentials
-            new_creds = self.collect_new_credentials()
-            self.vault_client.secrets.kv.v2.create_or_update_secret(
-                path='signal-bot/credentials',
-                secret=new_creds
-            )
-            
-            print("Credential rotation completed successfully")
-            
-        except Exception as e:
-            print(f"Credential rotation failed: {e}")
-            # Implement alerting here
-            
-    def trigger_relink(self):
-        """Trigger the Signal device re-linking process."""
-        # Implementation depends on your deployment method
-        pass
-        
-    def collect_new_credentials(self) -> dict:
-        """Collect new credentials after re-linking."""
-        # Implementation depends on your setup
-        pass
+ALLOWED_GROUPS = [
+    "group-id-1",   # Family group
+    "group-id-2",   # Work team
+]
 
-# Schedule rotation
-rotator = SignalCredentialRotator(
-    vault_url="https://vault.example.com",
-    vault_token=os.environ['VAULT_TOKEN']
-)
+# bot.py
+from signal_client.context import Context
 
-schedule.every(90).days.do(rotator.rotate_credentials)
+async def check_access(context: Context) -> bool:
+    """Check if user is authorized to use the bot."""
+    user = context.message.source
+    group = context.message.group_id
+    
+    # Allow specific users
+    if user in ALLOWED_USERS:
+        return True
+    
+    # Allow users in specific groups
+    if group and group in ALLOWED_GROUPS:
+        return True
+    
+    # Deny access
+    await context.reply("❌ Access denied")
+    logging.warning(f"Unauthorized access attempt from {user}")
+    return False
 
-while True:
-    schedule.run_pending()
-    time.sleep(3600)  # Check hourly
+# Use in command handlers
+async def admin_command(context: Context):
+    if not await check_access(context):
+        return
+    
+    # Command logic here
+    await context.reply("✅ Admin command executed")
 ```
 
-## Threat Modeling & Risk Assessment
+### Rate Limiting
 
-### Threat Scenarios
+Prevent abuse with simple rate limiting:
 
-#### 1. Credential Theft
-**Risk:** High  
-**Impact:** Complete account compromise  
-**Mitigations:**
-- Encrypted storage at rest
-- Restrictive file permissions
-- Regular rotation
-- Access logging
+```python
+import time
+from collections import defaultdict
 
-#### 2. Container Escape
-**Risk:** Medium  
-**Impact:** Host system compromise  
-**Mitigations:**
-- Non-root containers
-- Read-only filesystems
-- Security contexts
-- Network policies
+class RateLimiter:
+    def __init__(self, max_requests: int = 10, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(list)
+    
+    def is_allowed(self, user: str) -> bool:
+        now = time.time()
+        user_requests = self.requests[user]
+        
+        # Remove old requests
+        user_requests[:] = [req_time for req_time in user_requests 
+                           if now - req_time < self.window_seconds]
+        
+        # Check if under limit
+        if len(user_requests) < self.max_requests:
+            user_requests.append(now)
+            return True
+        
+        return False
 
-#### 3. Supply Chain Attack
-**Risk:** Medium  
-**Impact:** Code injection, backdoors  
-**Mitigations:**
-- Dependency scanning
-- Image vulnerability scanning
-- Signed containers
-- Minimal base images
+# Usage
+rate_limiter = RateLimiter(max_requests=5, window_seconds=60)
 
-#### 4. Insider Threat
-**Risk:** Medium  
-**Impact:** Unauthorized access  
-**Mitigations:**
-- Principle of least privilege
-- Audit logging
-- Multi-person approval
-- Regular access reviews
+async def rate_limited_command(context: Context):
+    user = context.message.source
+    
+    if not rate_limiter.is_allowed(user):
+        await context.reply("⏰ Rate limit exceeded. Please wait a minute.")
+        return
+    
+    # Command logic here
+```
 
-### Security Checklist
+## Monitoring & Alerts
 
-#### Pre-Deployment
+### Security Logging
 
-- [ ] Credentials stored in secure vault (not filesystem)
-- [ ] File permissions set to 600/700
-- [ ] Non-root container user configured
-- [ ] Network policies restrict traffic
-- [ ] TLS enabled for all communications
-- [ ] Dependency vulnerabilities scanned
-- [ ] Security contexts applied
-- [ ] Secrets not in container images
-- [ ] Audit logging enabled
-- [ ] Backup and recovery tested
-
-#### Runtime Monitoring
-
-- [ ] Failed authentication attempts logged
-- [ ] Unusual API usage patterns detected
-- [ ] File access monitoring enabled
-- [ ] Network traffic anomalies tracked
-- [ ] Resource usage monitored
-- [ ] Error rates tracked
-- [ ] Performance metrics collected
-
-#### Incident Response
-
-- [ ] Incident response plan documented
-- [ ] Emergency contacts identified
-- [ ] Credential revocation procedures tested
-- [ ] Backup restoration procedures verified
-- [ ] Communication plan established
-- [ ] Post-incident review process defined
-
-## Compliance & Auditing
-
-### Audit Logging
+Log security-relevant events:
 
 ```python
 import logging
-import json
-from datetime import datetime
 
-class SecurityAuditLogger:
-    def __init__(self):
-        self.logger = logging.getLogger('signal_security_audit')
-        handler = logging.FileHandler('/var/log/signal-security.log')
-        formatter = logging.Formatter('%(asctime)s - %(message)s')
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.INFO)
-    
-    def log_credential_access(self, action: str, user: str, success: bool):
-        """Log credential access attempts."""
-        event = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'event_type': 'credential_access',
-            'action': action,
-            'user': user,
-            'success': success,
-            'source_ip': self.get_source_ip()
-        }
-        self.logger.info(json.dumps(event))
-    
-    def log_message_operation(self, operation: str, recipient: str, success: bool):
-        """Log message operations."""
-        event = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'event_type': 'message_operation',
-            'operation': operation,
-            'recipient_hash': self.hash_phone_number(recipient),
-            'success': success
-        }
-        self.logger.info(json.dumps(event))
-    
-    def hash_phone_number(self, phone: str) -> str:
-        """Hash phone number for privacy."""
-        import hashlib
-        return hashlib.sha256(phone.encode()).hexdigest()[:16]
-    
-    def get_source_ip(self) -> str:
-        """Get source IP address."""
-        # Implementation depends on your environment
-        return "unknown"
+# Configure security logger
+security_logger = logging.getLogger('security')
+security_handler = logging.FileHandler('security.log')
+security_handler.setFormatter(
+    logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+)
+security_logger.addHandler(security_handler)
+security_logger.setLevel(logging.INFO)
 
-# Usage in your bot
-audit_logger = SecurityAuditLogger()
-
-async def secure_message_handler(context: Context) -> None:
+# Log security events
+async def secure_command_handler(context: Context):
+    user = context.message.source
+    command = context.message.message
+    
+    # Log command execution
+    security_logger.info(f"Command executed: user={user}, command={command}")
+    
     try:
-        # Your message handling logic
-        response = SendMessageRequest(message="Hello!", recipients=[])
-        await context.reply(response)
-        
-        # Log successful operation
-        audit_logger.log_message_operation(
-            operation="reply",
-            recipient=context.message.source,
-            success=True
-        )
+        # Command logic
+        await context.reply("Command executed")
+        security_logger.info(f"Command successful: user={user}")
     except Exception as e:
-        # Log failed operation
-        audit_logger.log_message_operation(
-            operation="reply",
-            recipient=context.message.source,
-            success=False
-        )
+        security_logger.error(f"Command failed: user={user}, error={e}")
         raise
 ```
 
-### Compliance Requirements
+### Simple Intrusion Detection
 
-#### GDPR Compliance
+Monitor for suspicious activity:
 
 ```python
-class GDPRCompliantBot:
+import time
+from collections import defaultdict
+
+class SecurityMonitor:
     def __init__(self):
-        self.data_retention_days = 30
-        self.user_consents = {}
+        self.failed_attempts = defaultdict(int)
+        self.last_attempt = defaultdict(float)
     
-    async def handle_data_request(self, context: Context) -> None:
-        """Handle GDPR data requests."""
-        user = context.message.source
-        message = context.message.message.lower()
+    def record_failed_attempt(self, user: str):
+        self.failed_attempts[user] += 1
+        self.last_attempt[user] = time.time()
         
-        if "delete my data" in message:
-            await self.delete_user_data(user)
-            response = SendMessageRequest(
-                message="Your data has been deleted as requested.",
-                recipients=[]
-            )
-            await context.reply(response)
-        
-        elif "export my data" in message:
-            data_export = await self.export_user_data(user)
-            response = SendMessageRequest(
-                message=f"Your data export: {data_export}",
-                recipients=[]
-            )
-            await context.reply(response)
+        # Alert on multiple failures
+        if self.failed_attempts[user] >= 5:
+            security_logger.warning(f"Multiple failed attempts from {user}")
+            # Could send alert message to admin
     
-    async def delete_user_data(self, user: str) -> None:
-        """Delete all data for a user."""
-        # Implementation depends on your data storage
-        pass
+    def is_suspicious(self, user: str) -> bool:
+        return self.failed_attempts[user] >= 3
+
+# Usage
+security_monitor = SecurityMonitor()
+
+async def protected_command(context: Context):
+    user = context.message.source
     
-    async def export_user_data(self, user: str) -> str:
-        """Export all data for a user."""
-        # Implementation depends on your data storage
-        return "Data export would go here"
+    if security_monitor.is_suspicious(user):
+        await context.reply("🚨 Account temporarily restricted")
+        return
+    
+    if not await check_access(context):
+        security_monitor.record_failed_attempt(user)
+        return
+    
+    # Command logic here
 ```
 
-## Emergency Procedures
+## Security Checklist
 
-### Credential Compromise Response
+### Before Deployment
 
-```bash
-#!/bin/bash
-# emergency-response.sh - Emergency credential compromise response
+- [ ] Credentials stored securely (not in code)
+- [ ] File permissions set correctly (600/700)
+- [ ] `.env` file in `.gitignore`
+- [ ] Bot runs as non-root user
+- [ ] Firewall configured properly
+- [ ] Credentials backed up securely
 
-echo "EMERGENCY: Signal credential compromise detected!"
+### Regular Maintenance
 
-# 1. Immediately stop all bots
-kubectl scale deployment signal-bot --replicas=0
+- [ ] Update dependencies monthly
+- [ ] Review access logs weekly
+- [ ] Test backup/restore process quarterly
+- [ ] Rotate credentials annually
+- [ ] Monitor for security updates
 
-# 2. Revoke compromised device
-echo "URGENT: Manually unlink compromised device in Signal app"
-echo "Signal Settings > Linked devices > Remove compromised device"
+### If Compromised
 
-# 3. Rotate all related credentials
-./rotate-all-credentials.sh
+1. **Immediately stop the bot**
+2. **Unlink the Signal device** (Signal app → Settings → Linked devices)
+3. **Change all related passwords**
+4. **Review logs for unauthorized activity**
+5. **Re-link with new credentials**
+6. **Update security measures**
 
-# 4. Review audit logs
-echo "Reviewing audit logs for suspicious activity..."
-grep -i "credential_access" /var/log/signal-security.log | tail -100
+!!! tip "Security is a Process"
+    Security isn't a one-time setup. Regularly review and update your security practices as your bot grows in importance and usage.
 
-# 5. Notify security team
-curl -X POST https://alerts.example.com/webhook \
-  -H "Content-Type: application/json" \
-  -d '{"alert": "Signal credential compromise", "severity": "critical"}'
-
-# 6. Generate incident report
-echo "Generating incident report..."
-./generate-incident-report.sh
-
-echo "Emergency response initiated. Manual intervention required."
-```
-
-### Recovery Procedures
-
-1. **Assess the scope** of the compromise
-2. **Revoke all affected credentials** immediately
-3. **Re-link Signal device** with new credentials
-4. **Update all production secrets** in secure storage
-5. **Review audit logs** for unauthorized activity
-6. **Test all systems** before resuming operations
-7. **Document the incident** and lessons learned
-8. **Update security procedures** based on findings
-
-## Security Best Practices Summary
-
-### Development
-- Use separate Signal accounts for development and production
-- Never commit credentials to version control
-- Use environment variables for configuration
-- Implement proper error handling to avoid credential leaks
-
-### Deployment
-- Use non-root containers with minimal privileges
-- Implement network segmentation and policies
-- Enable comprehensive audit logging
-- Use encrypted storage for all credentials
-
-### Operations
-- Monitor for unusual activity patterns
-- Implement automated credential rotation
-- Maintain incident response procedures
-- Conduct regular security reviews
-
-### Monitoring
-- Track failed authentication attempts
-- Monitor file access to credential directories
-- Alert on unusual API usage patterns
-- Log all administrative actions
-
-!!! warning "Regular Security Reviews"
-    Conduct quarterly security reviews of your Signal Client deployment, including:
-    - Credential rotation verification
-    - Access control audits
-    - Vulnerability assessments
-    - Incident response testing
-    - Compliance validation
-
----
-
-**Next Steps:**
-- [Operations Guide](operations.md) - Production deployment and monitoring
-- [Troubleshooting](diagnostics.md) - Common security issues and solutions
-- [Architecture](architecture.md) - Understanding the security model
+For more operational guidance, see [Running Your Bot](operations.md).

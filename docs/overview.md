@@ -1,36 +1,110 @@
 ---
 title: Overview
-summary: Understand how Signal Client layers opinionated tooling on top of signal-cli.
+summary: Learn how Signal Client makes it easy to build Signal messaging bots with Python.
 order: 1
 ---
 
-## What you get on day one
+# Overview
 
-- +heroicons:sparkles+ Batteries-included SDK around [`signal-cli-rest-api`](https://github.com/bbernhard/signal-cli-rest-api).
-- +heroicons:cog-6-tooth+ Async command runtime with typed contexts and dependency injection helpers.
-- +heroicons:signal+ Observability, release guardrails, and production checklists suitable for regulated teams.
+Signal Client is a Python library that simplifies building Signal messaging bots. It handles the complexity of Signal's protocol so you can focus on your bot's functionality.
 
-!!! note "Mind the prerequisites"
-    Signal Client expects a linked Signal device, outbound internet access to Signal's messaging network, and Python {{ signal.min_python }} or newer. Review the [Quickstart](quickstart.md) to confirm your environment before exploring deeper guides.
+## What Signal Client Provides
 
-## Architecture at a glance
+- **🤖 Simple Bot Framework** — Write message handlers as async Python functions
+- **📱 Signal Integration** — Built on [`signal-cli-rest-api`](https://github.com/bbernhard/signal-cli-rest-api) for reliable messaging
+- **⚡ Async Runtime** — Handle multiple messages concurrently with proper error handling
+- **🔧 Developer Tools** — CLI utilities for debugging, testing, and monitoring
 
-| Layer | Responsibilities | Tech highlights |
-| --- | --- | --- |
-| Interface | CLI, Typer commands, HTTP hooks | Structured logging, compatibility guard |
-| Runtime | Command scheduler, worker pools, retry orchestration | APScheduler, asyncio tasks |
-| Platform | State stores, queue buffers, observability pipeline | SQLite, Redis (optional), Prometheus |
-| Edge | Device link, REST bridge, binary execution | `signal-cli-rest-api`, GraalVM native binary |
+!!! info "Requirements"
+    - Python 3.8 or newer
+    - Docker (for signal-cli REST API)
+    - A Signal account for device linking
+    
+    See the [Quickstart](quickstart.md) for setup instructions.
 
-/// details | How the runtime flows
-1. Messages arrive via the Signal REST bridge (webhook or polling).
-2. Container workers deserialize payloads into structured entities and hand them to registered commands.
-3. Commands execute with strongly-typed context, emit telemetry, and schedule follow-up work if required.
-4. Results are persisted or forwarded through the operations pipeline for auditing.
+## How It Works
+
+Signal Client connects to Signal through a simple architecture:
+
+```mermaid
+graph LR
+    A[Your Bot] --> B[Signal Client]
+    B --> C[signal-cli REST API]
+    C --> D[Signal Network]
+    D --> E[Signal Users]
+```
+
+### Message Flow
+
+1. **Incoming Messages** — Signal Client polls the REST API for new messages
+2. **Command Matching** — Messages are matched against your registered command patterns
+3. **Handler Execution** — Your async handler functions process matched messages
+4. **Response Sending** — Send replies, reactions, or new messages back through Signal
+
+### Simple Example
+
+```python
+from signal_client.bot import SignalClient
+from signal_client.command import Command
+
+# Create bot instance
+client = SignalClient()
+
+# Define a command handler
+async def ping_handler(context):
+    await context.reply(SendMessageRequest(message="Pong! 🏓", recipients=[]))
+
+# Register command
+ping_cmd = Command(triggers=["ping", "!ping"])
+ping_cmd.with_handler(ping_handler)
+client.register(ping_cmd)
+
+# Start the bot
+await client.start()
+```
+
+## Key Features
+
+/// tab | Command System
+**Pattern-based message handling**
+
+- String literal triggers: `"help"`, `"status"`
+- Regular expressions: `r"weather\s+(.+)"`
+- Access control with whitelisting
+- Automatic command routing
 ///
 
-## Quick facts
+/// tab | Async Runtime
+**Concurrent message processing**
 
-{{ read_csv("quick-facts.csv") }}
+- Handle multiple messages simultaneously
+- Built-in error handling and retries
+- Dead letter queue for failed messages
+- Configurable worker pools
+///
 
-> **Next step** · Pick a use case in [Use Cases](use-cases.md) or skip ahead to implementation in [Quickstart](quickstart.md).
+/// tab | Signal Integration
+**Full Signal protocol support**
+
+- Send text messages and attachments
+- React to messages with emojis
+- Group and direct message support
+- Read receipts and typing indicators
+///
+
+/// tab | Developer Experience
+**Tools for building and debugging**
+
+- CLI utilities for testing and monitoring
+- Structured logging and metrics
+- Configuration validation
+- Hot-reload during development
+///
+
+## Next Steps
+
+Ready to build your first Signal bot?
+
+- **[Use Cases](use-cases.md)** — See practical examples and inspiration
+- **[Quickstart](quickstart.md)** — Set up your development environment
+- **[API Reference](api-reference.md)** — Detailed technical documentation

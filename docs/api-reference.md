@@ -1,21 +1,35 @@
 # API Reference
 
-Complete reference for Signal Client classes, methods, and configuration options with full method signatures, parameters, return values, and error handling.
+Complete technical reference for the Signal Client Python library. Includes class definitions, method signatures, type annotations, and implementation details for building Signal messaging bots.
+
+!!! info "API Documentation Structure"
+    - **[Core Classes](#core-classes)** — Primary runtime classes and their interfaces
+    - **[Message Schemas](#message-schemas)** — Data structures for Signal protocol messages
+    - **[Error Handling](#error-handling)** — Exception hierarchy and error management
+    - **[Configuration](#configuration-reference)** — Runtime configuration and environment variables
+    - **[CLI Tools](#cli-tools)** — Command-line utilities for debugging and operations
 
 ## Core Classes
 
 ### `SignalClient`
 
-The main runtime class that manages commands, workers, and the message processing loop.
+Primary runtime class that manages the message processing loop, command registration, and worker pool coordination. Interfaces with the signal-cli REST API for Signal protocol operations.
 
 ```python
 from signal_client.bot import SignalClient
 
-# Initialize with default configuration
+# Initialize with default configuration discovery
 client = SignalClient()
 
-# Or with custom configuration
+# Initialize with explicit configuration path
 client = SignalClient(config_path="/path/to/config.toml")
+
+# Initialize with configuration dictionary
+config = {
+    "signal_service": "http://localhost:8080",
+    "phone_number": "+1234567890"
+}
+client = SignalClient(config=config)
 ```
 
 #### Constructor
@@ -83,19 +97,31 @@ await client.stop()
 
 ### `Context`
 
-Provides access to the incoming message and methods for sending replies, reactions, and other Signal operations.
+Execution context for command handlers, providing access to the triggering message and Signal API operations. Passed to all registered command handlers during message processing.
 
 ```python
 from signal_client.context import Context
 from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
-async def handler(context: Context) -> None:
-    # Access the incoming message
-    message = context.message
+async def command_handler(context: Context) -> None:
+    # Access incoming message properties
+    sender_number = context.message.source
+    message_text = context.message.message
+    timestamp = context.message.timestamp
     
-    # Send a reply
-    response = SendMessageRequest(message="Hello!", recipients=[])
+    # Send response message
+    response = SendMessageRequest(
+        message="Response text",
+        recipients=[]  # Empty list replies to sender
+    )
     await context.reply(response)
+    
+    # Send reaction to original message
+    await context.react("👍")
+    
+    # Access Signal API clients directly
+    account_info = await context.accounts.get_account_info()
+    contacts = await context.contacts.list_contacts()
 ```
 
 #### Properties
@@ -234,27 +260,35 @@ await context.profiles.get_profile("+1234567890")
 
 ### `Command`
 
-Represents a command that can be triggered by incoming messages.
+Command definition class that encapsulates trigger patterns, access control, and handler function binding. Supports both string literal and regular expression pattern matching.
 
 ```python
-from signal_client.command import Command
+from signal_client.command import Command, CommandMetadata
 import re
 
-# Simple text triggers
-command = Command(triggers=["hello", "hi"])
+# String literal triggers
+command = Command(triggers=["ping", "status", "help"])
 
-# Regular expression triggers
-command = Command(triggers=[re.compile(r"weather\s+(.+)")])
+# Regular expression triggers with capture groups
+weather_command = Command(triggers=[
+    re.compile(r"weather\s+(.+)", re.IGNORECASE),
+    re.compile(r"forecast\s+(.+)", re.IGNORECASE)
+])
 
-# With metadata
-command = Command(
-    triggers=["help"],
-    whitelisted=["+1234567890"],  # Only these numbers can use this command
-    case_sensitive=True,
+# Access control with whitelisting
+admin_command = Command(
+    triggers=["shutdown", "restart"],
+    whitelisted=["+1234567890", "+0987654321"],
+    case_sensitive=True
+)
+
+# Command with metadata for documentation
+documented_command = Command(
+    triggers=["calculate"],
     metadata=CommandMetadata(
-        name="help",
-        description="Show help information",
-        usage="help [command]"
+        name="calculate",
+        description="Perform mathematical calculations",
+        usage="calculate <expression>"
     )
 )
 ```
@@ -421,6 +455,77 @@ request = ReactionRequest(
 ---
 
 ## Error Handling
+
+Build robust bots that handle failures gracefully. Here are the most common errors and how to handle them.
+
+### Common Error Types
+
+/// tab | Connection Issues
+```python
+from signal_client.exceptions import ConnectionError, AuthenticationError
+
+async def start_bot_safely():
+    try:
+        await client.start()
+    except ConnectionError:
+        print("❌ Can't connect to Signal REST API")
+        print("💡 Check if Docker container is running: docker ps")
+    except AuthenticationError:
+        print("❌ Signal device not linked")
+        print("💡 Run device linking: see quickstart guide")
+```
+///
+
+/// tab | Message Failures
+```python
+from signal_client.exceptions import MessageSendError, RateLimitError
+import asyncio
+
+async def safe_reply(context: Context, message: str):
+    try:
+        response = SendMessageRequest(message=message, recipients=[])
+        await context.reply(response)
+    except RateLimitError:
+        # Wait and retry once
+        await asyncio.sleep(5)
+        await context.reply(response)
+    except MessageSendError as e:
+        print(f"Failed to send message: {e}")
+        # Send simpler fallback message
+        fallback = SendMessageRequest(message="Error occurred", recipients=[])
+        await context.reply(fallback)
+```
+///
+
+/// tab | Input Validation
+```python
+from signal_client.exceptions import ValidationError
+
+async def weather_handler(context: Context):
+    message_text = context.message.message or ""
+    
+    # Extract city name safely
+    parts = message_text.split()
+    if len(parts) < 2:
+        error_msg = SendMessageRequest(
+            message="❌ Please specify a city: `weather London`",
+            recipients=[]
+        )
+        await context.reply(error_msg)
+        return
+    
+    city = " ".join(parts[1:]).strip()
+    if not city or len(city) > 50:
+        error_msg = SendMessageRequest(
+            message="❌ Invalid city name",
+            recipients=[]
+        )
+        await context.reply(error_msg)
+        return
+    
+    # Proceed with weather lookup...
+```
+///
 
 ### Exception Hierarchy
 

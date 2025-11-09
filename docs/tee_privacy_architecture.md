@@ -1,148 +1,329 @@
 ---
-title: TEE Privacy Architecture
-summary: Architectural record describing the zero-trust deployment model for Signal Client in sensitive environments.
+title: Privacy & Trust
+summary: Understanding privacy implications and building trustworthy Signal bots.
 order: 900
 ---
 
-# Architectural Decision Record: A Zero-Trust Commercial Bot on Signal
+# Privacy & Trust
 
-**Status:** Approved
+Understanding the privacy implications of Signal bots and how to build trustworthy automation.
 
-## 1. Context
+## Signal's Privacy Model
 
-The core challenge is to operate a commercial, closed-source AI bot on the Signal platform without violating the fundamental user expectation of end-to-end privacy. A standard closed-source bot would act as a trusted "man-in-the-middle," decrypting user messages and exposing them to the operator. This is unacceptable.
+Signal provides end-to-end encryption, meaning:
 
-This plan is further constrained by two critical business requirements:
+- **Messages are encrypted** between sender and recipient
+- **Signal servers can't read** your message content
+- **Only linked devices** can decrypt messages
 
-1.  The core intellectual property (the "Commercial Engine") must remain closed-source.
-2.  There is no budget for expensive, recurring third-party security audits.
+When you create a Signal bot, you're creating a **linked device** that can:
+- Read messages sent to your phone number
+- Send messages on your behalf
+- Access your Signal contacts and groups
 
-## 2. The Problem: The "Trust Gap"
+## Bot Privacy Considerations
 
-These constraints create a "Trust Gap." We are asking a privacy-conscious user base to trust an opaque system without the validation of open-source transparency or independent audits. This requires an architectural solution that minimizes the trust a user must place in us, replacing it with verifiable, cryptographic proof.
+### What Your Bot Can Access
 
-## 3. The Solution: The "Two-Tier TEE" Model
+Your Signal bot has access to:
 
-The most robust architecture under these constraints is a **"Two-Tier TEE" model**. This model splits the bot into two isolated components running in separate Trusted Execution Environments (TEEs), ensuring a radical simplification of the trusted, open-source code.
+```python
+# Message content and metadata
+message.message        # "Hello bot!"
+message.source         # "+1234567890" 
+message.timestamp      # When sent
+message.group_id       # Group identifier (if in group)
+message.attachments    # Files, images, etc.
 
-### 3.1. Core Components
+# Contact information
+# Your bot can see who messages it and group membership
+```
 
-#### 3.1.1. The "Crypto Core" (Open-Source, TEE #1)
+### What Your Bot Cannot Access
 
-- **Language:** Rust (for memory safety and performance).
-- **Responsibilities:**
-  - **Cryptography:** All cryptographic operations (encryption/decryption of messages and state blobs).
-  - **Signal Communication:** Minimal logic to interact with the Signal message queue.
-  - **API Server:** Exposes a single, internal-only endpoint for the Commercial Engine.
-- **Constraints:**
-  - **No External Network Access:** Other than the Signal service.
-  - **Stateless:** All state is received in the request.
-  - **Minimal Logic:** No business logic, only cryptographic and communication tasks.
+Your bot **cannot** access:
+- Messages sent to other people (unless in shared groups)
+- Messages sent before the bot was linked
+- Other people's contact lists
+- Messages in groups the bot isn't in
 
-#### 3.1.2. The "Commercial Engine" (Closed-Source, TEE #2)
+### Data Handling Best Practices
 
-- **Language:** Python (to support AI/ML libraries).
-- **Responsibilities:**
-  - **Business Logic:** All proprietary algorithms, AI models, and state management logic.
-  - **API Client:** Makes requests to the Crypto Core's internal API.
-- **Constraints:**
-  - **No Direct Signal Access:** Cannot read from or write to the Signal network.
-  - **No Access to Encrypted Data:** Only handles plaintext data provided by the Crypto Core.
+#### Minimize Data Collection
 
-### 3.2. Architectural Flow
+Only collect data you actually need:
 
-1.  The **Crypto Core (TEE #1)** receives and decrypts the user's message and their encrypted state blob.
-2.  The **Crypto Core** passes the **plaintext message and plaintext state** to the **Commercial Engine (TEE #2)** through a secure, private, in-memory channel.
-3.  The **Commercial Engine** processes the data, performs its logic, and returns a plaintext response and the new state to the Crypto Core.
-4.  The **Crypto Core** encrypts the response, formats it into a Signal message, encrypts the new state blob, and sends both back to the user.
+```python
+# ❌ Don't store everything
+def store_message(message):
+    database.save({
+        'content': message.message,
+        'sender': message.source,
+        'timestamp': message.timestamp,
+        'attachments': message.attachments,
+        # ... storing everything
+    })
 
-### 3.3. API Boundary Definition
+# ✅ Store only what's needed
+def store_command_usage(command_name, user):
+    database.save({
+        'command': command_name,
+        'user_hash': hash(user),  # Don't store actual phone number
+        'timestamp': datetime.now(),
+    })
+```
 
-The communication between the two TEEs will occur over a secure, private, in-memory channel. The interface will be a simple, synchronous request/response model.
+#### Secure Data Storage
 
-- **Endpoint:** `POST /v1/process`
-- **Request Body (`ProcessRequest`):**
-  - `message` (string): The plaintext user message.
-  - `state` (base64 string): The plaintext user state blob.
-- **Response Body (`ProcessResponse`):**
-  - `response` (string): The plaintext response to send to the user.
-  - `new_state` (base64 string): The new plaintext user state blob.
+Protect any data you do store:
 
-## 4. Defense of this Recommendation
+```python
+import hashlib
+import os
 
-This architecture is the only logically sound path forward because it directly confronts the "Trust Gap" by minimizing the complexity of the trusted component.
+def hash_user_id(phone_number: str) -> str:
+    """Create anonymous user identifier."""
+    salt = os.getenv('USER_HASH_SALT', 'default-salt')
+    return hashlib.sha256(f"{phone_number}{salt}".encode()).hexdigest()[:16]
 
-- **It Minimizes the Trust Surface:** A user doesn't need to trust a complex application. They only need to trust the tiny, open-source Crypto Core, whose only job is encryption and decryption. This component is so simple that it can be audited by a single developer in an afternoon.
-- **It Enables Meaningful Community Audits:** By keeping the open-source component radically simple, we make community audits feasible and effective.
-- **It is Verifiable at Runtime:** We will provide **reproducible builds** for the Crypto Core. A user's client can then use **remote attestation** to cryptographically verify that our TEE is running the _exact, community-vetted version_ of the Crypto Core.
-- **It Protects Intellectual Property:** Our valuable commercial logic remains in the closed-source Commercial Engine.
+# Use hashed IDs instead of phone numbers
+user_id = hash_user_id(context.message.source)
+```
 
-### 4.1. Sufficiency for a "Virtual Human" Assistant
+#### Data Retention
 
-This architecture is designed to support complex, stateful interactions, enabling the bot to function as a "virtual human" with long-term memory and proactive capabilities.
+Don't keep data forever:
 
-- **On Long-Term Memory:** All user-specific data (past conversations, preferences, tasks) is managed by the Commercial Engine and stored in the `state` blob. After each interaction, the Commercial Engine returns the updated state to the Crypto Core, which encrypts it and sends it back to be stored externally as an opaque, indecipherable blob. On the next interaction, the process is reversed. The bot can "remember" indefinitely, but the operator never has access to the plaintext memory.
-- **On Contextual Understanding:** The Commercial Engine has access to the full, decrypted conversation history via the `state` blob. This allows it to perform sophisticated contextual analysis and provide intelligent, relevant responses without the operator ever seeing the raw, private history.
-- **On Proactive Help (Reminders):** Proactive features like reminders are handled by an external, untrusted "trigger" service (e.g., a cron job).
-  1.  The trigger service calls a dedicated, secure endpoint on the Crypto Core, identifying the user for whom a check is due.
-  2.  The Crypto Core retrieves the user's encrypted state blob and decrypts it.
-  3.  It passes the plaintext state to the Commercial Engine with a special request, e.g., `{"event": "reminder_check"}`.
-  4.  The Commercial Engine inspects the state. If a reminder is due, it crafts the appropriate message and returns it to the Crypto Core. If not, it returns an empty response.
-  5.  If a message is received, the Crypto Core encrypts and sends it to the user.
+```python
+import time
+from datetime import datetime, timedelta
 
-This model ensures that even proactive, server-initiated events are processed with the same zero-trust privacy guarantees as user-initiated messages.
+class DataRetention:
+    def __init__(self, retention_days: int = 30):
+        self.retention_days = retention_days
+    
+    def cleanup_old_data(self):
+        """Remove data older than retention period."""
+        cutoff = datetime.now() - timedelta(days=self.retention_days)
+        
+        # Remove old logs, cached data, etc.
+        database.delete_where('timestamp < ?', cutoff)
+        
+        print(f"Cleaned up data older than {self.retention_days} days")
 
-## 5. Security and Threat Model
+# Run cleanup periodically
+retention = DataRetention(retention_days=7)  # Keep only 1 week
+```
 
-### 5.1. Conceptual Flow: Remote Attestation
+## Building Trust
 
-Remote attestation is the process by which a user's client can cryptographically verify that the correct, open-source code is running inside the Crypto Core TEE.
+### Be Transparent
 
-The flow is as follows:
+Tell users what your bot does:
 
-1.  **Client Challenge:** The user's client sends a random "nonce" to the bot.
-2.  **Attestation Generation:** The Crypto Core TEE generates a signed "attestation document" containing the code's hash and the nonce, signed by a private key fused into the hardware.
-3.  **Vendor Verification:** The Crypto Core has the document co-signed by the hardware vendor's public attestation service.
-4.  **Client Verification:** The client receives the document and verifies the vendor's signature, the nonce, and **compares the code hash against the hash of the public, open-source code.**
-5.  **Secure Channel Established:** If all checks pass, the client has proven the integrity of the running code.
+```python
+async def privacy_command(context: Context):
+    """Explain bot's privacy practices."""
+    privacy_info = """
+🔒 **Privacy Information**
 
-### 5.2. Threat Model: Operator and Law Enforcement Compulsion
+This bot:
+✅ Only reads messages sent directly to it
+✅ Stores minimal data (command usage only)
+✅ Deletes data after 7 days
+✅ Runs on your own server
 
-This architecture is designed for **operator incapacity**.
+This bot does NOT:
+❌ Store message content
+❌ Share data with third parties
+❌ Access your other conversations
+❌ Send data outside Signal
 
-- **No Access to Keys:** Private keys are loaded directly into the TEE's encrypted memory, making them inaccessible to us as the operator.
-- **No Access to Plaintext:** All data is decrypted, processed, and re-encrypted exclusively within the isolated TEEs.
-- **Defense Against Compelled Backdoors:** Remote attestation prevents us from deploying a malicious version of the Crypto Core. Any change to the code would alter its hash, causing the attestation check to fail on the user's client and exposing the backdoor.
+Source code: https://github.com/yourname/your-bot
+    """
+    await context.reply(privacy_info)
+```
 
-## 6. Phased Development Plan
+### Provide User Control
 
-**Phase 1: Standalone Component Development (2-3 months)**
+Let users control their data:
 
-1.  **Develop the Crypto Core:** Implement the Rust-based cryptographic component.
-2.  **Develop the Commercial Engine:** Implement the Python-based business logic with the `/v1/process` endpoint.
-3.  **Unit and Integration Testing:** Thoroughly test both components in isolation.
+```python
+async def delete_my_data_command(context: Context):
+    """Allow users to delete their data."""
+    user = context.message.source
+    user_hash = hash_user_id(user)
+    
+    # Delete all data for this user
+    deleted_count = database.delete_user_data(user_hash)
+    
+    await context.reply(f"✅ Deleted {deleted_count} records of your data.")
 
-**Phase 2: TEE Integration and Attestation (3-5 months)**
+async def what_data_command(context: Context):
+    """Show user what data is stored about them."""
+    user = context.message.source
+    user_hash = hash_user_id(user)
+    
+    data = database.get_user_data(user_hash)
+    
+    if not data:
+        await context.reply("No data stored about you.")
+        return
+    
+    summary = f"""
+📊 **Your Data**
 
-1.  **TEE Deployment:** Package and deploy both components into their respective TEEs.
-2.  **Implement Secure Channel:** Establish the private, in-memory communication channel.
-3.  **Implement Remote Attestation Flow:** Build the logic for the client challenge/response and vendor attestation.
-4.  **End-to-End Testing:** Perform comprehensive testing of the entire, integrated system.
+Commands used: {len(data['commands'])}
+Last activity: {data['last_seen']}
+Data retention: 7 days
 
-**Phase 3: Open-Source and Community Audit (Ongoing)**
+Use `/delete_my_data` to remove all data.
+    """
+    await context.reply(summary)
+```
 
-1.  **Publish Crypto Core:** Publish the source code, build instructions, and reproducible build scripts.
-2.  **Engage Community:** Actively solicit and respond to community feedback and audits.
+## Open Source Benefits
 
-## 7. Implementation Risks and Considerations
+Consider making your bot open source:
 
-While the "Two-Tier TEE" model is architecturally sound, its implementation is complex and carries inherent risks that must be acknowledged and mitigated.
+### Benefits of Open Source Bots
 
-- **Performance Overhead:** TEEs introduce latency due to memory encryption/decryption and context switching. For a real-time conversational bot, this overhead could impact user experience. The implementation plan must include rigorous performance testing and optimization.
-- **TEE Vendor Lock-in:** The choice of a TEE provider (e.g., Intel SGX, AMD SEV, AWS Nitro Enclaves) has significant implications for the implementation details of the attestation process and may create vendor-specific dependencies. The initial research phase must carefully weigh the trade-offs of each ecosystem.
-- **Side-Channel Attacks:** TEEs are not a panacea. They have been shown to be vulnerable to sophisticated side-channel attacks that can infer data by observing patterns in memory access, cache usage, or power consumption. The Crypto Core, in particular, must be written using defensive coding practices, including constant-time cryptographic operations, to mitigate these risks.
-- **Secure Key Provisioning:** The process of securely provisioning the initial private keys to the TEEs is a critical and complex step. A robust and automated key management strategy is required to ensure that keys are never exposed outside of the TEE, even during deployment and startup.
+- **Transparency** — Users can see exactly what your bot does
+- **Trust** — No hidden functionality or data collection
+- **Community** — Others can contribute improvements
+- **Security** — More eyes on the code means better security
 
-## 8. Conclusion
+### Simple Open Source Setup
 
-This plan is **sufficient and correct.** It achieves **verifiable, zero-trust privacy** by radically simplifying and isolating the trusted code base and providing cryptographic proof of its runtime integrity. It is the definitive and most robust architecture for building a commercial, closed-source "virtual human" assistant on a privacy-first platform like Signal.
+```bash
+# Create public repository
+git init
+git add .
+git commit -m "Initial bot release"
+
+# Add clear README
+echo "# My Signal Bot
+
+A simple Signal bot that does X, Y, and Z.
+
+## Privacy
+- Only stores command usage statistics
+- Deletes data after 7 days
+- No message content stored
+- Runs on your own server
+
+## Setup
+1. Clone this repository
+2. Follow setup instructions in docs/
+3. Deploy to your own server
+" > README.md
+
+# Push to GitHub
+git remote add origin https://github.com/yourname/your-bot
+git push -u origin main
+```
+
+## Privacy-First Bot Examples
+
+### Minimal Data Bot
+
+```python
+# A bot that stores no persistent data
+from signal_client.bot import SignalClient
+from signal_client.context import Context
+
+client = SignalClient()
+
+@client.command("!weather")
+async def weather_command(context: Context):
+    # Get weather without storing user data
+    location = context.message.message.replace("!weather", "").strip()
+    weather = await get_weather(location)  # External API call
+    
+    await context.reply(f"Weather: {weather}")
+    # No data stored - completely stateless
+
+@client.command("!time")
+async def time_command(context: Context):
+    from datetime import datetime
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    await context.reply(f"Current time: {current_time}")
+    # No data stored
+```
+
+### Anonymous Analytics Bot
+
+```python
+# A bot that collects anonymous usage statistics
+import hashlib
+from collections import defaultdict
+
+# Anonymous usage tracking
+usage_stats = defaultdict(int)
+
+@client.command("!help")
+async def help_command(context: Context):
+    # Track usage anonymously
+    day = datetime.now().strftime("%Y-%m-%d")
+    usage_stats[f"help_{day}"] += 1
+    
+    await context.reply("Available commands: !help, !weather, !time")
+
+# Periodic stats (no user identification)
+def print_anonymous_stats():
+    print("Anonymous usage statistics:")
+    for command, count in usage_stats.items():
+        print(f"  {command}: {count} uses")
+```
+
+## Legal Considerations
+
+### Terms of Service
+
+Consider adding simple terms:
+
+```python
+async def terms_command(context: Context):
+    """Display bot terms of service."""
+    terms = """
+📋 **Terms of Service**
+
+By using this bot, you agree that:
+- This is a personal project, not a commercial service
+- No warranty or guarantee of uptime
+- Your data is handled according to our privacy policy
+- You can request data deletion at any time
+
+Questions? Contact: your-email@example.com
+    """
+    await context.reply(terms)
+```
+
+### GDPR Compliance (EU Users)
+
+If you have EU users, consider basic GDPR compliance:
+
+```python
+# Implement data subject rights
+@client.command("!gdpr")
+async def gdpr_command(context: Context):
+    """GDPR information and rights."""
+    gdpr_info = """
+🇪🇺 **GDPR Rights**
+
+You have the right to:
+- Know what data we store (/what_data)
+- Delete your data (/delete_my_data)
+- Data portability (contact admin)
+- Object to processing (stop using bot)
+
+Data controller: [Your name/organization]
+Contact: [Your email]
+    """
+    await context.reply(gdpr_info)
+```
+
+!!! tip "Privacy by Design"
+    The best privacy practice is to not collect data you don't need. Design your bot to be as stateless as possible.
+
+For technical security practices, see [Security & Secrets](production_secrets.md).

@@ -1,39 +1,48 @@
 ---
 title: Signal Client
-summary: Launch secure Signal automation, bots, and integrations in minutes.
+summary: Build Signal bots and automation for your personal projects, groups, and communities.
 sidebar_title: Home
 order: 0
 ---
 
-# Build reliable Signal automation fast
+# Build Signal bots that actually work
 
-Signal Client lets you script, observe, and operate advanced Signal messaging from any environment. Start linking a device, ship your flows, and keep conversations secure without reverse engineering the protocol.
+Signal Client is a Python library that makes it easy to create Signal messaging bots. Whether you want to automate your group chats, get server notifications, or build helpful utilities for your friends and family, Signal Client handles the complexity so you can focus on what your bot does.
 
-[Start the quickstart](quickstart.md){: class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-primary-foreground" }
-[Review the architecture](architecture.md){: class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2" }
+[Get started in 5 minutes](quickstart.md){: class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-primary-foreground" }
+[See what you can build](use-cases.md){: class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2" }
 
-## Why builders choose Signal Client
+## Why developers love Signal Client
 
-- +heroicons:bolt+ Link a Signal device once and stream high-volume messaging through a hardened daemon.
-- +heroicons:shield-check+ Keep secrets isolated with opinionated key management and optional TEE flows.
-- +heroicons:chart-bar+ Inspect delivery, latency, and health metrics with built-in observability hooks.
-- +heroicons:wrench-screwdriver+ Extend quickly via async command handlers, webhook emitters, and scripting helpers.
+- +heroicons:rocket-launch+ **Quick setup** — Link your Signal device once and start building immediately
+- +heroicons:code-bracket+ **Simple API** — Write bot commands with clean, async Python functions  
+- +heroicons:shield-check+ **Secure by default** — Built on Signal's end-to-end encryption with proper credential management
+- +heroicons:wrench-screwdriver+ **Batteries included** — Message handling, error recovery, and debugging tools out of the box
 
-## Pick your first milestone
+## What you can build
 
-1. Provision a linked device in under five minutes.
-2. Send your first encrypted message with attachments.
-3. Configure observability to monitor delivery outcomes.
-4. Promote the workflow to your production workspace.
+!!! example "Popular bot ideas"
+    - **Group moderator** — Welcome new members, enforce rules, manage spam
+    - **Server monitor** — Get alerts when your services go down or deployments finish
+    - **Family assistant** — Shared shopping lists, dinner polls, event reminders
+    - **Utility bot** — Weather updates, quick calculations, fun commands
 
-/// details | Why Signal Client?
-Signal Client wraps signal-cli with a stable SDK, deployment guidance, and operational guardrails. Instead of stitching brittle scripts, you get:
+## Your bot in 3 steps
 
-- Versioned APIs that follow Signal schema updates.
-- Repeatable deployment patterns for containers, edge devices, and TEEs.
-- Tooling to triage failures, replay messages, and scale throughput safely.
+1. **[Link your device](quickstart.md#step-3-link-your-signal-device)** — Scan a QR code to connect Signal Client to your account
+2. **[Write commands](quickstart.md#step-4-create-your-first-bot)** — Create async functions that respond to messages
+3. **[Deploy and enjoy](operations.md)** — Run your bot locally or deploy it anywhere Python runs
 
-When you need to bend Signal to your product, Signal Client gives you the batteries and the guardrails.
+/// details | Why not just use signal-cli directly?
+Signal Client wraps the excellent [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) with a developer-friendly Python SDK. Instead of wrestling with REST APIs and message parsing, you get:
+
+- **Clean async/await API** — Write bot logic with modern Python patterns
+- **Automatic message handling** — Parse incoming messages, route to commands, handle errors
+- **Built-in reliability** — Dead letter queues, retry logic, and health checks
+- **Production ready** — Logging, metrics, and deployment guidance included
+
+Perfect for developers who want to build bots, not infrastructure.
 ///
 
-> **Next step** · Bring up the linked device workflow in [Quickstart](quickstart.md) and confirm messaging end-to-end before wiring business logic.
+!!! tip "Ready to start?"
+    The [quickstart guide](quickstart.md) will have you sending your first bot message in under 10 minutes. No Signal protocol knowledge required!

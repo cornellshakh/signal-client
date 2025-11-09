@@ -45,6 +45,8 @@ jobs:
             mkdocs-autorefs==1.4.3 \
             "mkdocstrings[python]==0.24.0" \
             "griffe<1.0.0"
+          # Install the package itself so mkdocstrings can import it
+          pip install -e .
 
       - name: Build documentation
         run: mkdocs build --site-dir site

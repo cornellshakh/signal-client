@@ -4,9 +4,13 @@ summary: Runbooks for keeping Signal Client healthy in production.
 order: 14
 ---
 
-## Upgrade checklist
+## Release guard
 
-1. `signal-client release-guard --check` — exit code must be zero before deploying.
+The release guard prevents risky deployments by validating system health before allowing updates.
+
+### Upgrade checklist
+
+1. `release-guard --check` — exit code must be zero before deploying.
 2. Deploy new containers with rolling strategy; keep at least one worker on the previous version.
 3. Monitor `signal_client_latency_seconds` and DLQ counters during rollout.
 4. Rotate workers back if latency doubles or DLQ growth exceeds baseline.
@@ -18,20 +22,20 @@ order: 14
 
 /// details | Bridge connectivity issues
 1. Confirm REST bridge container is healthy; restart if unresponsive.
-2. Run `signal-client compatibility` to validate the bridge still trusts your link.
+2. Check signal-cli connectivity and device linking status.
 3. If the device was unlinked, re-run the [Quickstart](quickstart.md#link-your-signal-device) flow.
 ///
 
 /// details | Message backlog
-1. Inspect the DLQ: `signal-client dlq list --limit 20`.
-2. Replay messages once underlying services recover: `signal-client dlq replay --all`.
-3. Consider scaling workers temporarily (see below).
+1. Inspect the DLQ: `inspect-dlq --limit 20`.
+2. Review failed messages and identify patterns in failures.
+3. Consider scaling workers temporarily or fixing underlying issues.
 ///
 
 /// details | Configuration drift
-1. Run `signal-client config diff --baseline path/to/baseline.toml`.
+1. Review environment variables and configuration files.
 2. Reconcile differences, then lock configuration via your secret store.
-3. Trigger release guard before re-enabling automation.
+3. Run `release-guard --check` before re-enabling automation.
 ///
 
 !!! danger "Pause automation when reprocessing"

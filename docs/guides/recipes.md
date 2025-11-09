@@ -83,4 +83,4 @@ await context.groups.remove_member(group_id="escalation", number="+1234567890")
 - Store incident metadata in your data store to avoid duplicate reminders.
 ///
 
-> **Next step** · Reference the sample scripts under [`scripts/`](../../scripts/) for more end-to-end automation examples.
+> **Next step** · Reference the sample scripts in the project's `scripts/` directory for more end-to-end automation examples.

@@ -75,6 +75,7 @@ nav:
       - Configuration: configuration.md
       - Observability: observability.md
       - Operations: operations.md
+      - Troubleshooting: troubleshooting.md
       - Diagnostics: diagnostics.md
       - API Reference: api-reference.md
       - Guides:

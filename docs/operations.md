@@ -23,7 +23,7 @@ The release guard prevents risky deployments by validating system health before 
 /// details | Bridge connectivity issues
 1. Confirm REST bridge container is healthy; restart if unresponsive.
 2. Check signal-cli connectivity and device linking status.
-3. If the device was unlinked, re-run the [Quickstart](quickstart.md#link-your-signal-device) flow.
+3. If the device was unlinked, re-run the [Quickstart](quickstart.md#step-3-link-your-signal-device) flow.
 ///
 
 /// details | Message backlog

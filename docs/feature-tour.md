@@ -28,7 +28,7 @@ order: 3
 
 - [Release guard](operations.md#release-guard) blocks risky deploys without manual dashboards.
 - [Metrics](observability.md#metrics) surface latency, error codes, and attachment throughput.
-- [CLI utilities](quickstart.md#validate-your-environment) bootstrap device linking, message sending, and troubleshooting.
+- [CLI utilities](quickstart.md#step-5-validate-your-setup) bootstrap device linking, message sending, and troubleshooting.
 
 !!! info "Want a deeper look?"
     Walk through the [Architecture](architecture.md) page for diagrams, component responsibilities, and deployment patterns.

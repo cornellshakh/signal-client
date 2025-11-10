@@ -80,6 +80,14 @@ Tour the runtime in the [Feature overview](https://cornellsh.github.io/signal-cl
 - `release-guard` keeps publishing blocked until compatibility notes and migrations are confirmed.
 - Observability guides explain dashboards, structured logs, and how to replay dead-letter queues after an outage.
 
+### Releases
+
+1. Update `pyproject.toml` and `docs/appendix/changelog.md` with the new version highlights.
+2. Merge the change into `main`.
+3. From GitHub → Actions → **Publish**, run the workflow on `main` (optionally paste release notes).
+
+The workflow runs the full quality gate, publishes the build to PyPI via trusted publishing, and creates the Git tag/GitHub release (attaching the built distributions). Pushing a `v*.*.*` tag manually will trigger the same automation.
+
 ## Documentation & support
 
 - Documentation hub: https://cornellsh.github.io/signal-client/

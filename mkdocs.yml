@@ -66,25 +66,35 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Discover:
-      - Overview: overview.md
-      - Use Cases: use-cases.md
-      - Feature Tour: feature-tour.md
-  - Build:
-      - Quickstart: quickstart.md
-      - Architecture: architecture.md
-      - Configuration: configuration.md
-      - Observability: observability.md
-      - Operations: operations.md
+      - Overview: discover/overview.md
+      - Use Cases: discover/use-cases.md
+      - Feature Tour: discover/feature-tour.md
+  - Building Bots:
+      - Start Here: bots/index.md
+      - Quickstart: bots/quickstart.md
+      - Architecture: bots/architecture.md
+      - Configuration: bots/configuration.md
+      - Testing: bots/testing.md
+      - Observability: bots/observability.md
+      - Diagnostics: bots/diagnostics.md
       - Troubleshooting: troubleshooting.md
-      - Diagnostics: diagnostics.md
-      - API Reference: api-reference.md
       - Guides:
-          - Recipes: guides/recipes.md
-          - Writing Async Commands: guides/writing-async-commands.md
-  - Standards:
-      - Coding Standards: coding_standards.md
-      - Production Secrets: production_secrets.md
+          - Recipes: bots/guides/recipes.md
+          - Writing Async Commands: bots/guides/writing-async-commands.md
+  - Runbook:
+      - Operations: run/operations.md
+      - Observability: run/observability.md
+      - Performance: run/performance.md
+  - Reference:
+      - API: reference/api.md
+      - Commands: reference/commands.md
+      - Schema Compatibility: reference/schema.md
+  - Contribute:
+      - Coding Standards: contribute/coding-standards.md
+      - Production Secrets: contribute/production-secrets.md
+      - Test Plan: contribute/test-plan.md
   - Appendix:
-      - TEE Privacy Architecture: tee_privacy_architecture.md
-      - Resources & Community: resources.md
-      - Changelog & Roadmap: changelog.md
+      - Resources & Community: appendix/resources.md
+      - Changelog & Roadmap: appendix/changelog.md
+      - TEE Privacy Architecture: appendix/tee_privacy_architecture.md
+      - Documentation Plan: docs_plan.md

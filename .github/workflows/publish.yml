@@ -28,7 +28,7 @@ jobs:
       - name: Install tooling
         run: |
           python -m pip install --upgrade pip
-          pip install poetry pip-audit
+          pip install poetry poetry-plugin-export pip-audit
 
       - name: Install project dependencies
         run: poetry install

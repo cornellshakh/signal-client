@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from urllib.error import URLError
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 # Add the project root's 'src' directory to the Python path
@@ -30,6 +31,8 @@ from signal_client.infrastructure.api_clients import (  # noqa: E402
 
 # Swagger spec published by the upstream signal-cli REST API project.
 SWAGGER_URL = "https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json"
+SWAGGER_REQUEST_TIMEOUT = 30
+ALLOWED_SWAGGER_SCHEMES = frozenset({"https"})
 
 # A mapping from the client module to the tag used in the swagger spec.
 CLIENT_TAG_MAPPING = {
@@ -49,6 +52,24 @@ CLIENT_TAG_MAPPING = {
 }
 
 
+class SwaggerSpecDownloadError(RuntimeError):
+    """Raised when downloading the swagger spec fails."""
+
+    def __init__(self, url: str) -> None:
+        super().__init__(f"Failed to download swagger spec from {url}")
+        self.url = url
+
+
+def _validate_swagger_url(url: str) -> None:
+    parsed = urlsplit(url)
+    if parsed.scheme not in ALLOWED_SWAGGER_SCHEMES:
+        message = (
+            f"Unsupported URL scheme '{parsed.scheme}' for swagger spec. "
+            f"Allowed schemes: {sorted(ALLOWED_SWAGGER_SCHEMES)}"
+        )
+        raise ValueError(message)
+
+
 def snake_to_camel(snake_case_string: str) -> str:
     """Converts a snake_case string to camelCase."""
     parts = snake_case_string.split("_")
@@ -57,13 +78,14 @@ def snake_to_camel(snake_case_string: str) -> str:
 
 def get_swagger_spec() -> dict[str, Any]:
     """Loads the swagger specification from the upstream hosted location."""
+    _validate_swagger_url(SWAGGER_URL)
     try:
-        with urlopen(SWAGGER_URL, timeout=30) as response:
+        with urlopen(  # noqa: S310 - scheme validated in _validate_swagger_url
+            SWAGGER_URL, timeout=SWAGGER_REQUEST_TIMEOUT
+        ) as response:
             payload = response.read().decode("utf-8")
     except URLError as exc:  # pragma: no cover - network error passthrough
-        raise RuntimeError(
-            f"Failed to download swagger spec from {SWAGGER_URL}"
-        ) from exc
+        raise SwaggerSpecDownloadError(SWAGGER_URL) from exc
     return json.loads(payload)
 
 

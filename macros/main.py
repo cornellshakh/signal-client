@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from mkdocs_macros.plugin import MacrosPlugin
 
-
 DEV_COMMANDS = {
     "ruff": "poetry run ruff check .",
     "black": "poetry run black --check src tests",
     "mypy": "poetry run mypy src",
     "pytest": "poetry run pytest-safe -n auto --cov=signal_client",
-    "pytest_quick": "pytest -m \"not performance\"",
+    "pytest_quick": 'pytest -m "not performance"',
     "docs": "poetry run mkdocs serve",
 }
 
@@ -46,7 +45,7 @@ def define_env(env: MacrosPlugin) -> None:
             ("Docs", DEV_COMMANDS["docs"]),
         ]
         body = "\n".join(f"| {label} | `{cmd}` | ☐ |" for label, cmd in rows)
-        return "\n".join([header, separator, body])
+        return f"{header}\n{separator}\n{body}"
 
     @env.macro
     def dev_command_list() -> str:

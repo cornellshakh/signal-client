@@ -4,7 +4,7 @@
 | --- | --- |
 | Increased latency | Command timer dashboards (Prometheus/Grafana). |
 | Message drops | Dead-letter queues or retry logs. |
-| API drift | Compatibility checker output vs `cli_rest_api_swagger.json`. |
+| API drift | Compatibility checker output vs [`cli_rest_api_swagger.json`](https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json). |
 
 ## Dashboards
 

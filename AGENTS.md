@@ -3,7 +3,7 @@
 ## Layout & Ownership
 - Runtime code: `src/signal_client/` grouped by surface (`bot`, `command`, `context`, `infrastructure`); matching tests live in `tests/`, with integrations in `tests/integration/` and load checks in `tests/test_performance.py`.
 - Docs/mkdocs content: `docs/`, `mkdocs.yml`, `macros/`; automation helpers reside in `scripts/` (every CLI entry exposes `main()`).
-- Shared assets: `cli_rest_api_swagger.json` plus diagrams in `excalidraw/`.
+- Shared assets: upstream swagger spec (`https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json`) plus diagrams in `excalidraw/`.
 
 ## Dev Workflow
 - `poetry install --sync` to prep the env.
@@ -29,4 +29,4 @@
 
 ## Secrets & Config
 - Never hardcode credentials; load via env or `.env` ignored by Git using `signal_client.context.settings`.
-- When altering serialization/crypto/persistence, run Bandit (above) and make sure REST compatibility matches `cli_rest_api_swagger.json`.
+- When altering serialization/crypto/persistence, run Bandit (above) and make sure REST compatibility matches `https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json`.

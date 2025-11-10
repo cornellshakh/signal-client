@@ -243,4 +243,4 @@ tail -20 ~/.local/share/signal-cli/logs/signal-cli.log 2>/dev/null || echo "No l
 
     Check these first before diving deeper!
 
-For more detailed diagnostics, see the [Diagnostics Guide](diagnostics.md).
+For more detailed diagnostics, see the [Diagnostics Guide](bots/diagnostics.md).

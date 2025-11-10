@@ -19,6 +19,4 @@
 
 ## Visual Index
 
-![Bot surfaces](../excalidraw/bot-surfaces.png){.lightbox}
-
-Add more diagrams from `excalidraw/` as features mature.
+Excalidraw sources live in `excalidraw/`. Export diagrams (for example, `key-management.json`) to PNG/SVG and drop them into `docs/assets/` for Lightbox embeds as they become available.

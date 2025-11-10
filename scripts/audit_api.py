@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.error import URLError
+from urllib.request import urlopen
 
 # Add the project root's 'src' directory to the Python path
 project_root = Path(__file__).parent.parent
@@ -26,7 +28,10 @@ from signal_client.infrastructure.api_clients import (  # noqa: E402
     sticker_packs_client,
 )
 
-# A mapping from the client module to the tag used in cli_rest_api_swagger.json
+# Swagger spec published by the upstream signal-cli REST API project.
+SWAGGER_URL = "https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json"
+
+# A mapping from the client module to the tag used in the swagger spec.
 CLIENT_TAG_MAPPING = {
     "accounts_client": "Accounts",
     "attachments_client": "Attachments",
@@ -50,11 +55,16 @@ def snake_to_camel(snake_case_string: str) -> str:
     return parts[0] + "".join(x.title() for x in parts[1:])
 
 
-def get_swagger_spec(project_root: Path) -> dict[str, Any]:
-    """Loads the swagger specification from the project root."""
-    swagger_file = project_root / "cli_rest_api_swagger.json"
-    with swagger_file.open() as f:
-        return json.load(f)
+def get_swagger_spec() -> dict[str, Any]:
+    """Loads the swagger specification from the upstream hosted location."""
+    try:
+        with urlopen(SWAGGER_URL, timeout=30) as response:
+            payload = response.read().decode("utf-8")
+    except URLError as exc:  # pragma: no cover - network error passthrough
+        raise RuntimeError(
+            f"Failed to download swagger spec from {SWAGGER_URL}"
+        ) from exc
+    return json.loads(payload)
 
 
 def get_client_methods() -> dict[str, set[str]]:
@@ -96,8 +106,7 @@ def get_swagger_operations() -> dict[str, set[str]]:
     Parses the swagger spec and returns a dictionary of tags (clients)
     and their operationIds.
     """
-    project_root = Path(__file__).parent.parent
-    spec = get_swagger_spec(project_root)
+    spec = get_swagger_spec()
     swagger_operations: dict[str, set[str]] = {}
 
     for path_data in spec["paths"].values():

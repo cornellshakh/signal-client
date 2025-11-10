@@ -8,7 +8,7 @@ Use these tools to inspect a live bot.
 python -m signal_client.compatibility --strict
 ```
 
-Compares runtime contracts to `cli_rest_api_swagger.json` and fails on drift.
+Compares runtime contracts to [`cli_rest_api_swagger.json`](https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json) and fails on drift.
 
 ## Health Commands
 

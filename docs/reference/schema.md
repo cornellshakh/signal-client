@@ -1,6 +1,6 @@
 # Schema Compatibility
 
-Signal-client tracks API shapes in `cli_rest_api_swagger.json`.
+Signal-client tracks API shapes in [`cli_rest_api_swagger.json`](https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json).
 
 ## Validation
 

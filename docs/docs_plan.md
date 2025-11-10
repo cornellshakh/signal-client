@@ -30,7 +30,7 @@
 ### 4. Reference
 - `docs/reference/api.md`: mkdocstrings auto API by module.
 - `docs/reference/commands.md`: CLI entry points, generated via macros and `table-reader`.
-- `docs/reference/schema.md`: link to `cli_rest_api_swagger.json` plus compatibility checker instructions.
+- `docs/reference/schema.md`: link to `https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json` plus compatibility checker instructions.
 
 ### 5. Runbook
 - `docs/run/operations.md`, `run/observability.md`, `run/performance.md`.

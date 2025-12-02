@@ -16,6 +16,7 @@ class SendMessageRequest(BaseModel):
     quote_message: str | None = None
     quote_timestamp: int | None = None
     preview: LinkPreview | None = None
+    text_mode: str | None = None
 
 
 class TypingIndicatorRequest(BaseModel):

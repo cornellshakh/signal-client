@@ -8,7 +8,7 @@ import pytest
 
 from signal_client.infrastructure.schemas.message import Message, MessageType
 from signal_client.services.message_parser import MessageParser
-from signal_client.services.worker_pool_manager import Worker
+from signal_client.services.worker_pool_manager import Worker, WorkerConfig
 
 if TYPE_CHECKING:
     from signal_client.bot import SignalClient

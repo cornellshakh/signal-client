@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import Any, Iterator, Self
+from typing import Any, Self
 
 from pydantic import Field, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -78,22 +79,27 @@ class Settings(BaseSettings):
         try:
             env_payload: dict[str, Any] = {}
             try:
-                env_payload = cls().model_dump()
+                env_payload = cls().model_dump()  # type: ignore[call-arg]
             except ValidationError:
                 env_payload = {}
 
-            payload: dict[str, Any] = env_payload if config is None else {**env_payload, **config}
+            payload: dict[str, Any] = (
+                env_payload if config is None else {**env_payload, **config}
+            )
             with _without_required_env():
                 settings = cls.model_validate(payload)
             cls._validate_required_fields(settings)
-            return settings
         except ValidationError as validation_error:
             raise cls._wrap_validation_error(validation_error) from validation_error
+        else:
+            return settings
 
     @classmethod
     def _wrap_validation_error(cls, error: ValidationError) -> ConfigurationError:
-        def _error_field(err: dict[str, Any]) -> str:
-            loc = err.get("loc") or []
+        def _error_field(err: Mapping[str, object]) -> str:
+            loc = err.get("loc")
+            if not isinstance(loc, (list, tuple)):
+                return ""
             return str(loc[-1]) if loc else ""
 
         missing = cls._missing_fields(error)
@@ -146,8 +152,10 @@ class Settings(BaseSettings):
         alias = field.validation_alias
         if not alias:
             return None
-        return str(alias) if not isinstance(alias, tuple) else "/".join(
-            str(item) for item in alias
+        return (
+            str(alias)
+            if not isinstance(alias, tuple)
+            else "/".join(str(item) for item in alias)
         )
 
     @classmethod

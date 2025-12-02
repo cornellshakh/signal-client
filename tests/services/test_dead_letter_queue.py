@@ -7,9 +7,9 @@ from typing import Any
 
 import pytest
 
-from signal_client.storage.base import Storage
 from signal_client.observability.metrics import DLQ_BACKLOG
 from signal_client.services.dead_letter_queue import DeadLetterQueue
+from signal_client.storage.base import Storage
 
 
 class InMemoryStorage(Storage):
@@ -123,9 +123,7 @@ async def test_replay_discards_messages_over_retry_limit() -> None:
 async def test_dlq_updates_backlog_metric() -> None:
     storage = InMemoryStorage()
     queue_name = "dlq"
-    dlq = DeadLetterQueue(
-        storage, queue_name, max_retries=5, base_backoff_seconds=0.0
-    )
+    dlq = DeadLetterQueue(storage, queue_name, max_retries=5, base_backoff_seconds=0.0)
 
     await dlq.send({"id": 1})
     gauge = DLQ_BACKLOG.labels(queue=queue_name)

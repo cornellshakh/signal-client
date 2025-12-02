@@ -59,7 +59,7 @@
 ### CLI and Tooling
 - [x] Replace the Typer CLI with a minimal, dependency-free CLI (`python -m signal_client.cli`) that supports `dlq inspect` (and optional `dlq purge`) without global containers.
 - [x] Re-evaluate `compatibility.py`: keep as a simple optional guard or drop if redundant; ensure tests reflect the chosen path.
-- [ ] Leave `release_guard.py` intact unless tests require adjustments.
+- [x] Leave `release_guard.py` intact unless tests require adjustments.
 
 ### Naming and Documentation Pass
 - [x] Rename generic modules (`entities.py`, `services/models.py`) to clearer equivalents (`context_deps.py`, `runtime/models.py`) and update imports.
@@ -67,8 +67,8 @@
 - [x] Keep docstrings where logic is non-obvious (backpressure policy, circuit breaker thresholds); keep them concise and action-oriented.
 
 ### Verification
-- [ ] Run quality gate: `poetry run ruff check .`; `poetry run black --check src tests`; `poetry run mypy src`; `poetry run pytest-safe -n auto --cov=signal_client`.
-- [ ] Note any intentional breaking changes in README or CHANGELOG with migration guidance.
+- [x] Run quality gate: `poetry run ruff check .`; `poetry run black --check src tests`; `poetry run mypy src`; `poetry run pytest-safe -n auto --cov=signal_client`.
+- [x] Note any intentional breaking changes in README or CHANGELOG with migration guidance.
 
 ## Notes for the Implementing Agent
 - Work incrementally: simplify config and composition first, then move modules; avoid broad file moves until lifecycles are solid.
@@ -130,7 +130,7 @@
 ### CLI and Tooling
 - [x] Replace Typer-based CLI with a minimal `python -m signal_client.cli` that supports `dlq inspect` (and optionally `dlq purge`) via argparse or plain functions; avoid global container usage.
 - [x] Evaluate `compatibility.py` guard; either drop it or reduce to a single optional `check_supported_versions()` helper invoked only in CLI/dev paths.
-- [ ] Ensure `release_guard.py` stays untouched unless tests require changes.
+- [x] Ensure `release_guard.py` stays untouched unless tests require changes.
 
 ### Naming and Documentation Pass
 - [x] Rename generic modules (`entities.py`, `services/models.py`) to clearer counterparts (`context_deps.py`, `runtime/models.py`), updating imports.
@@ -138,8 +138,8 @@
 - [x] Add inline docstrings where logic is non-obvious (backpressure policy, circuit breaker thresholds), keep them concise.
 
 ### Verification
-- [ ] Run the quality gate: `poetry run ruff check .`, `poetry run black --check src tests`, `poetry run mypy src`, `poetry run pytest-safe -n auto --cov=signal_client`.
-- [ ] Record any intentional breaking changes in a `CHANGELOG` entry or README note.
+- [x] Run the quality gate: `poetry run ruff check .`, `poetry run black --check src tests`, `poetry run mypy src`, `poetry run pytest-safe -n auto --cov=signal_client`.
+- [x] Record any intentional breaking changes in a `CHANGELOG` entry or README note.
 
 ## Notes for the Implementing Agent
 - Work incrementally: finish config simplification and DI removal before moving files to the new layout to keep diffs reviewable.

@@ -93,9 +93,11 @@ def get_swagger_spec() -> dict[str, Any]:
     if override_path:
         path = Path(override_path)
         if not path.is_file():
-            raise FileNotFoundError(
-                f"Override swagger spec path '{override_path}' does not exist"
+            message = (
+                "Override swagger spec path "
+                f"'{override_path}' does not exist"
             )
+            raise FileNotFoundError(message)
         return _read_cached_spec(path)
 
     payload: str | None = None

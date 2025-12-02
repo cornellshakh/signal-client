@@ -11,7 +11,8 @@ class _StructlogGuard:
         """
         Configure structlog only if the caller has not already configured it.
 
-        Defaults to a concise console renderer; opt into JSON by setting json_output=True.
+        Defaults to a concise console renderer; opt into JSON by setting
+        json_output=True.
         """
         if cls._configured:
             return
@@ -30,9 +31,13 @@ class _StructlogGuard:
             structlog.processors.StackInfoRenderer(),
             structlog.dev.set_exc_info,
             structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer() if json_output else structlog.dev.ConsoleRenderer(),
+            (
+                structlog.processors.JSONRenderer()
+                if json_output
+                else structlog.dev.ConsoleRenderer()
+            ),
         ]
-        structlog.configure(processors=processors)
+        structlog.configure(processors=processors)  # type: ignore[arg-type]
         cls._configured = True
 
     @classmethod

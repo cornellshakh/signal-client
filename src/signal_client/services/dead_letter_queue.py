@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
@@ -16,14 +16,15 @@ log = structlog.get_logger()
 
 @dataclass
 class DLQEntry:
-    payload: Any
+    payload: dict[str, Any] | str
     retry_count: int
     next_retry_at: float
 
     def to_record(self) -> dict[str, Any]:
         return {
             "payload": self.payload,
-            # Preserve legacy 'message' key for compatibility with existing DLQ consumers.
+            # Preserve legacy 'message' key for compatibility with existing
+            # DLQ consumers.
             "message": self.payload,
             "retry_count": self.retry_count,
             "next_retry_at": self.next_retry_at,
@@ -36,7 +37,10 @@ class DLQEntry:
         *,
         default_next_retry_at: float,
     ) -> DLQEntry:
-        payload = record.get("payload", record.get("message"))
+        payload_raw = record.get("payload")
+        if payload_raw is None:
+            payload_raw = record.get("message", {})
+        payload = cast("dict[str, Any] | str", payload_raw)
         retry_count = int(record.get("retry_count", 0))
         next_retry_at = float(record.get("next_retry_at", default_next_retry_at))
         return cls(
@@ -60,13 +64,11 @@ class DeadLetterQueue:
         self._queue_name = queue_name
         self._max_retries = max_retries
         self._base_backoff_seconds = max(0.0, base_backoff_seconds)
-        self._max_backoff_seconds = max(
-            self._base_backoff_seconds, max_backoff_seconds
-        )
+        self._max_backoff_seconds = max(self._base_backoff_seconds, max_backoff_seconds)
 
     async def send(
         self,
-        message: Any,
+        message: dict[str, Any] | str,
         *,
         retry_count: int = 0,
         next_retry_at: float | None = None,
@@ -120,9 +122,7 @@ class DeadLetterQueue:
                     DLQEntry(
                         payload=entry.payload,
                         retry_count=updated_retry_count,
-                        next_retry_at=self._compute_next_retry_at(
-                            updated_retry_count
-                        ),
+                        next_retry_at=self._compute_next_retry_at(updated_retry_count),
                     ).to_record()
                 )
             else:

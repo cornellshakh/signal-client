@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable
 
 import aiohttp
 
 from .config import Settings
+from .context import Context
 from .context_deps import ContextDependencies
 from .infrastructure.api_clients import (
     AccountsClient,
@@ -24,20 +25,20 @@ from .infrastructure.api_clients import (
     SearchClient,
     StickerPacksClient,
 )
-from .infrastructure.schemas.message import Message
 from .infrastructure.api_clients.base_client import ClientConfig
-from .storage.redis import RedisStorage
-from .storage.sqlite import SQLiteStorage
+from .infrastructure.schemas.message import Message
 from .infrastructure.websocket_client import WebSocketClient
+from .runtime.listener import BackpressurePolicy, MessageService
+from .runtime.models import QueuedMessage
+from .runtime.worker_pool import WorkerPool
 from .services.circuit_breaker import CircuitBreaker
 from .services.dead_letter_queue import DeadLetterQueue
 from .services.lock_manager import LockManager
 from .services.message_parser import MessageParser
-from .runtime.listener import BackpressurePolicy, MessageService
-from .runtime.models import QueuedMessage
-from .runtime.worker_pool import WorkerPool
 from .services.rate_limiter import RateLimiter
-from .context import Context
+from .storage.base import Storage
+from .storage.redis import RedisStorage
+from .storage.sqlite import SQLiteStorage
 
 
 @dataclass
@@ -120,17 +121,17 @@ class Application:
             lock_manager=self.lock_manager,
             phone_number=self.settings.phone_number,
         )
-        self.context_factory = partial(
-            Context, dependencies=self.context_dependencies
-        )
+        self.context_factory = partial(Context, dependencies=self.context_dependencies)
         self.message_service = MessageService(
             websocket_client=self.websocket_client,
             queue=self.queue,
             dead_letter_queue=self.dead_letter_queue,
             enqueue_timeout=self.settings.queue_put_timeout,
-            backpressure_policy=BackpressurePolicy.DROP_OLDEST
-            if self.settings.queue_drop_oldest_on_timeout
-            else BackpressurePolicy.FAIL_FAST,
+            backpressure_policy=(
+                BackpressurePolicy.DROP_OLDEST
+                if self.settings.queue_drop_oldest_on_timeout
+                else BackpressurePolicy.FAIL_FAST
+            ),
         )
         self.worker_pool = WorkerPool(
             context_factory=self.context_factory,
@@ -139,7 +140,7 @@ class Application:
             pool_size=self.settings.worker_pool_size,
         )
 
-    def _create_storage(self):
+    def _create_storage(self) -> Storage:
         if self.settings.storage_type.lower() == "redis":
             return RedisStorage(
                 host=self.settings.redis_host,

@@ -61,7 +61,10 @@ class Worker:
                 queued_message = (
                     queued_item
                     if isinstance(queued_item, QueuedMessage)
-                    else QueuedMessage(raw=str(queued_item), enqueued_at=time.perf_counter())
+                    else QueuedMessage(
+                        raw=str(queued_item),
+                        enqueued_at=time.perf_counter(),
+                    )
                 )
                 latency = time.perf_counter() - queued_message.enqueued_at
                 try:
@@ -99,7 +102,7 @@ class Worker:
             source=message.source,
             timestamp=message.timestamp,
         )
-        context = self._context_factory(message=message)
+        context = self._context_factory(message)
         text = context.message.message
         if not isinstance(text, str) or not text:
             return

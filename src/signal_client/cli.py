@@ -4,14 +4,18 @@ import argparse
 import asyncio
 import json
 
-from .config import Settings
 from .app import Application
+from .config import Settings
 
 
 async def _inspect_dlq() -> None:
     settings = Settings.from_sources()
     app = Application(settings)
     await app.initialize()
+    if app.dead_letter_queue is None:
+        message = "Dead Letter Queue is not configured."
+        raise RuntimeError(message)
+
     messages = await app.dead_letter_queue.inspect()
     if not messages:
         print("Dead Letter Queue is empty.")

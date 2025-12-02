@@ -5,15 +5,18 @@ from collections.abc import Awaitable, Callable
 from types import TracebackType
 from typing import TYPE_CHECKING, Self
 
+from .app import APIClients, Application
 from .command import Command
 from .compatibility import check_supported_versions
 from .config import Settings
-from .app import Application
+from .infrastructure.websocket_client import WebSocketClient
 from .observability.logging import (
     ensure_structlog_configured,
     reset_structlog_configuration_guard,
 )
-
+from .runtime.listener import MessageService
+from .runtime.models import QueuedMessage
+from .runtime.worker_pool import WorkerPool
 
 if TYPE_CHECKING:
     from .context import Context
@@ -53,7 +56,8 @@ class SignalClient:
         if middleware in self._middleware:
             return
         self._middleware.append(middleware)
-        self.app.worker_pool.register_middleware(middleware)
+        if self.app.worker_pool is not None:
+            self.app.worker_pool.register_middleware(middleware)
 
     async def __aenter__(self) -> Self:
         await self.app.initialize()
@@ -70,18 +74,24 @@ class SignalClient:
     async def start(self) -> None:
         """Start the bot."""
         await self.app.initialize()
+        if self.app.worker_pool is None or self.app.message_service is None:
+            message = "Runtime not initialized. Call await app.initialize() first."
+            raise RuntimeError(message)
+        worker_pool = self.app.worker_pool
+        message_service = self.app.message_service
+
         for command in self._commands:
             self._register_with_worker_pool(command)
 
         for middleware in self._middleware:
-            self.app.worker_pool.register_middleware(middleware)
+            worker_pool.register_middleware(middleware)
 
-        self.app.worker_pool.start()
+        worker_pool.start()
 
         try:
             await asyncio.gather(
-                self.app.message_service.listen(),
-                self.app.worker_pool.join(),
+                message_service.listen(),
+                worker_pool.join(),
             )
         finally:
             await self.shutdown()
@@ -112,43 +122,53 @@ class SignalClient:
         if id(command) in self._registered_command_ids:
             return
 
+        if self.app.worker_pool is None:
+            return
+
         self.app.worker_pool.register(command)
         self._registered_command_ids.add(id(command))
 
     @property
-    def queue(self):
+    def queue(self) -> asyncio.Queue[QueuedMessage]:
         if self.app.queue is None:
             message = "Runtime not initialized. Call await app.initialize() first."
             raise RuntimeError(message)
         return self.app.queue
 
     @property
-    def worker_pool(self):
+    def worker_pool(self) -> WorkerPool:
         if self.app.worker_pool is None:
             message = "Runtime not initialized. Call await app.initialize() first."
             raise RuntimeError(message)
         return self.app.worker_pool
 
     @property
-    def api_clients(self):
+    def api_clients(self) -> APIClients:
         if self.app.api_clients is None:
             message = "Runtime not initialized. Call await app.initialize() first."
             raise RuntimeError(message)
         return self.app.api_clients
 
     @property
-    def websocket_client(self):
+    def websocket_client(self) -> WebSocketClient:
         if self.app.websocket_client is None:
             message = "Runtime not initialized. Call await app.initialize() first."
             raise RuntimeError(message)
         return self.app.websocket_client
 
-    async def set_websocket_client(self, websocket_client) -> None:
+    @property
+    def message_service(self) -> MessageService:
+        if self.app.message_service is None:
+            message = "Runtime not initialized. Call await app.initialize() first."
+            raise RuntimeError(message)
+        return self.app.message_service
+
+    async def set_websocket_client(self, websocket_client: WebSocketClient) -> None:
         """Override websocket client (test helper)."""
         await self.app.initialize()
         self.app.websocket_client = websocket_client
         if self.app.message_service is not None:
-            self.app.message_service._websocket_client = websocket_client
+            self.app.message_service.set_websocket_client(websocket_client)
 
 
 def reset_structlog_configuration_for_tests() -> None:

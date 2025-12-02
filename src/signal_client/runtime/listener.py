@@ -9,8 +9,8 @@ import structlog
 
 from signal_client.infrastructure.websocket_client import WebSocketClient
 from signal_client.observability.metrics import MESSAGE_QUEUE_DEPTH
-from signal_client.services.dead_letter_queue import DeadLetterQueue
 from signal_client.runtime.models import QueuedMessage
+from signal_client.services.dead_letter_queue import DeadLetterQueue
 
 log = structlog.get_logger()
 
@@ -33,19 +33,16 @@ class MessageService:
         *,
         enqueue_timeout: float = 1.0,
         backpressure_policy: BackpressurePolicy = BackpressurePolicy.DROP_OLDEST,
-        drop_oldest_on_timeout: bool | None = None,
     ) -> None:
         self._websocket_client = websocket_client
         self._queue = queue
         self._dead_letter_queue = dead_letter_queue
         self._enqueue_timeout = max(0.0, enqueue_timeout)
-        if drop_oldest_on_timeout is not None:
-            backpressure_policy = (
-                BackpressurePolicy.DROP_OLDEST
-                if drop_oldest_on_timeout
-                else BackpressurePolicy.FAIL_FAST
-            )
         self._backpressure_policy = backpressure_policy
+
+    def set_websocket_client(self, websocket_client: WebSocketClient) -> None:
+        """Swap websocket client (primarily for tests)."""
+        self._websocket_client = websocket_client
 
     async def listen(self) -> None:
         """Listen for incoming messages and apply explicit backpressure."""

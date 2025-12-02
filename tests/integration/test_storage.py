@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from signal_client.config import Settings
 from signal_client.app import Application
+from signal_client.config import Settings
 from signal_client.storage.redis import RedisStorage
 from signal_client.storage.sqlite import SQLiteStorage
 

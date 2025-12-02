@@ -30,7 +30,12 @@ async def send_message(bot: SignalClient, text: str) -> None:
             },
         }
     }
-    await bot.queue.put(QueuedMessage(raw=json.dumps(message), enqueued_at=time.perf_counter()))
+    await bot.queue.put(
+        QueuedMessage(
+            raw=json.dumps(message),
+            enqueued_at=time.perf_counter(),
+        )
+    )
 
 
 def assert_sent(bot: SignalClient, text: str) -> None:
@@ -145,7 +150,9 @@ async def test_signal_client_start_propagates_exceptions() -> None:
     await client.app.initialize()
 
     assert client.app.message_service is not None
-    client.app.message_service.listen = AsyncMock(side_effect=RuntimeError("listen failed"))
+    client.app.message_service.listen = AsyncMock(
+        side_effect=RuntimeError("listen failed")
+    )
 
     await client.set_websocket_client(AsyncMock())
     client.websocket_client.close = AsyncMock()

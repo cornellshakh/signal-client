@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 import structlog
 
@@ -38,7 +38,9 @@ class CommandRouter:
     def register(self, command: Command) -> None:
         for trigger in command.triggers:
             if isinstance(trigger, str):
-                self._register_literal(trigger, command, command.case_sensitive)
+                self._register_literal(
+                    trigger, command, case_sensitive=command.case_sensitive
+                )
             elif isinstance(trigger, re.Pattern):
                 self._register_regex(trigger, command)
 
@@ -58,7 +60,7 @@ class CommandRouter:
         return None, None
 
     def _register_literal(
-        self, trigger: str, command: Command, case_sensitive: bool
+        self, trigger: str, command: Command, *, case_sensitive: bool
     ) -> None:
         for registration in self._literal_triggers:
             if registration.trigger == trigger and registration.command is command:

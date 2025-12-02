@@ -12,15 +12,16 @@ from signal_client.bot import SignalClient
 from signal_client.command import Command, command
 from signal_client.context import Context
 from signal_client.context_deps import ContextDependencies
+from signal_client.infrastructure.schemas.message import Message
 from signal_client.observability.metrics import (
     MESSAGE_QUEUE_DEPTH,
     MESSAGE_QUEUE_LATENCY,
 )
-from signal_client.services.message_parser import MessageParser
+from signal_client.runtime.command_router import CommandRouter
 from signal_client.runtime.listener import MessageService
 from signal_client.runtime.models import QueuedMessage
-from signal_client.runtime.command_router import CommandRouter
 from signal_client.runtime.worker_pool import Worker, WorkerConfig, WorkerPool
+from signal_client.services.message_parser import MessageParser
 
 
 @pytest.fixture
@@ -71,9 +72,10 @@ def _build_worker_pool(
             lock_manager=bot.app.lock_manager,
             phone_number=bot.settings.phone_number,
         )
-    context_factory = lambda message: Context(
-        message=message, dependencies=context_dependencies
-    )
+
+    def context_factory(message: Message) -> Context:
+        return Context(message=message, dependencies=context_dependencies)
+
     manager = WorkerPool(
         context_factory=context_factory,
         queue=queue,

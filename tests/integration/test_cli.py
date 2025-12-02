@@ -5,9 +5,9 @@ import json
 
 import pytest
 
+from signal_client.app import Application
 from signal_client.cli import inspect_dlq
 from signal_client.config import Settings
-from signal_client.app import Application
 
 
 @pytest.fixture(autouse=True)

@@ -43,7 +43,7 @@
 
 ### Runtime Pipeline Clarity
 - [x] Move `MessageService` into `runtime/listener.py`; remove unused flags; expose backpressure policy explicitly (e.g., enum `fail_fast` vs `drop_oldest`) and document defaults.
-- [ ] Split routing from execution: introduce `CommandRouter` (ordered triggers + regex list) and a lean `worker_pool.py` that pulls from the queue, routes, applies middleware, and records metrics.
+- [x] Split routing from execution: introduce `CommandRouter` (ordered triggers + regex list) and a lean `worker_pool.py` that pulls from the queue, routes, applies middleware, and records metrics.
 - [x] Keep `QueuedMessage` in `runtime/models.py`; ensure latency/depth metrics remain but simplify log keys and variable names for readability.
 
 ### Storage and DLQ
@@ -113,8 +113,8 @@
 
 ### Clarify Runtime Pipeline
 - [x] Move `MessageService` into `runtime/listener.py`; strip unused `_started`, make backpressure policy explicit via a small strategy enum (`fail_fast` vs `drop_oldest`).
-- [ ] Collapse `WorkerPoolManager` + `Worker` into a clearer `worker_pool.py` with: ordered trigger matching (respect registration order), explicit regex command list, and simple middleware chain (no provider wiring).
-- [ ] Introduce a `CommandRouter` responsible solely for trigger registration/matching; keep it deterministic and easy to unit test.
+- [x] Collapse `WorkerPoolManager` + `Worker` into a clearer `worker_pool.py` with: ordered trigger matching (respect registration order), explicit regex command list, and simple middleware chain (no provider wiring).
+- [x] Introduce a `CommandRouter` responsible solely for trigger registration/matching; keep it deterministic and easy to unit test.
 - [x] Keep `QueuedMessage` as a tiny dataclass in `runtime/models.py`; ensure latency metrics remain, but simplify names/log keys.
 
 ### Streamline Storage and DLQ

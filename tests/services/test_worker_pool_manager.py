@@ -135,16 +135,14 @@ async def test_worker_process_matches_insensitive_trigger(
     mock_context_factory, mock_queue, mock_message_parser, mock_command
 ):
     # Arrange
+    router = CommandRouter()
+    router.register(mock_command)
+
     worker_config = WorkerConfig(
         context_factory=mock_context_factory,
         queue=mock_queue,
-        commands={"!test": mock_command},
         message_parser=mock_message_parser,
-        sensitive_trigger_regex=None,
-        insensitive_trigger_regex=re.compile("(!test)", re.IGNORECASE),
-        sensitive_triggers=[],
-        insensitive_triggers=["!test"],
-        regex_commands=[],
+        router=router,
         middleware=[],
     )
     worker = Worker(worker_config)
@@ -165,16 +163,14 @@ async def test_worker_process_matches_sensitive_trigger(
 ):
     # Arrange
     mock_command.case_sensitive = True
+    router = CommandRouter()
+    router.register(mock_command)
+
     worker_config = WorkerConfig(
         context_factory=mock_context_factory,
         queue=mock_queue,
-        commands={"!test": mock_command},
         message_parser=mock_message_parser,
-        sensitive_trigger_regex=re.compile("(!test)"),
-        insensitive_trigger_regex=None,
-        sensitive_triggers=["!test"],
-        insensitive_triggers=[],
-        regex_commands=[],
+        router=router,
         middleware=[],
     )
     worker = Worker(worker_config)
@@ -198,16 +194,14 @@ async def test_worker_process_matches_regex_trigger(
     regex_handler = AsyncMock()
     regex_command.handle = regex_handler
 
+    router = CommandRouter()
+    router.register(regex_command)
+
     worker_config = WorkerConfig(
         context_factory=mock_context_factory,
         queue=mock_queue,
-        commands={},
         message_parser=mock_message_parser,
-        sensitive_trigger_regex=None,
-        insensitive_trigger_regex=None,
-        sensitive_triggers=[],
-        insensitive_triggers=[],
-        regex_commands=[(regex, regex_command)],
+        router=router,
         middleware=[],
     )
     worker = Worker(worker_config)

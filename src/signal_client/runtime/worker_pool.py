@@ -72,7 +72,7 @@ class Worker:
                     )
                     message = self._message_parser.parse(queued_message.raw)
                     if message:
-                        await self._process_message(message, latency)
+                        await self.process(message, latency)
                         MESSAGES_PROCESSED.inc()
                 except UnsupportedMessageError as error:
                     log.debug("worker.unsupported_message", error=error)
@@ -91,7 +91,7 @@ class Worker:
             except asyncio.TimeoutError:  # noqa: PERF203
                 continue
 
-    async def _process_message(
+    async def process(  # compatibility alias for legacy tests/callers
         self, message: Message, queue_latency: float | None = None
     ) -> None:
         structlog.contextvars.bind_contextvars(

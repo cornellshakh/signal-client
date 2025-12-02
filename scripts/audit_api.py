@@ -1,6 +1,7 @@
 # scripts/audit_api.py
 import inspect
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,8 @@ from signal_client.infrastructure.api_clients import (  # noqa: E402
 SWAGGER_URL = "https://bbernhard.github.io/signal-cli-rest-api/src/docs/swagger.json"
 SWAGGER_REQUEST_TIMEOUT = 30
 ALLOWED_SWAGGER_SCHEMES = frozenset({"https"})
+SWAGGER_CACHE_PATH = project_root / ".cache" / "swagger.json"
+SWAGGER_SPEC_PATH_ENV = "SIGNAL_SWAGGER_SPEC_PATH"
 
 # A mapping from the client module to the tag used in the swagger spec.
 CLIENT_TAG_MAPPING = {
@@ -70,6 +73,11 @@ def _validate_swagger_url(url: str) -> None:
         raise ValueError(message)
 
 
+def _read_cached_spec(cache_path: Path) -> dict[str, Any]:
+    with cache_path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
 def snake_to_camel(snake_case_string: str) -> str:
     """Converts a snake_case string to camelCase."""
     parts = snake_case_string.split("_")
@@ -77,7 +85,20 @@ def snake_to_camel(snake_case_string: str) -> str:
 
 
 def get_swagger_spec() -> dict[str, Any]:
-    """Loads the swagger specification from the upstream hosted location."""
+    """
+    Loads the swagger specification from the upstream hosted location, falling back
+    to a cached file or a user-specified path when offline.
+    """
+    override_path = os.environ.get(SWAGGER_SPEC_PATH_ENV)
+    if override_path:
+        path = Path(override_path)
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"Override swagger spec path '{override_path}' does not exist"
+            )
+        return _read_cached_spec(path)
+
+    payload: str | None = None
     _validate_swagger_url(SWAGGER_URL)
     try:
         with urlopen(  # noqa: S310 - scheme validated in _validate_swagger_url
@@ -85,8 +106,19 @@ def get_swagger_spec() -> dict[str, Any]:
         ) as response:
             payload = response.read().decode("utf-8")
     except URLError as exc:  # pragma: no cover - network error passthrough
+        if SWAGGER_CACHE_PATH.exists():
+            return _read_cached_spec(SWAGGER_CACHE_PATH)
         raise SwaggerSpecDownloadError(SWAGGER_URL) from exc
-    return json.loads(payload)
+
+    spec = json.loads(payload)
+    try:
+        SWAGGER_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        SWAGGER_CACHE_PATH.write_text(payload, encoding="utf-8")
+    except OSError:
+        # Cache writes should never block the audit; ignore filesystem issues.
+        pass
+
+    return spec
 
 
 def get_client_methods() -> dict[str, set[str]]:

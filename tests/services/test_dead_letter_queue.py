@@ -91,7 +91,11 @@ async def test_replay_returns_ready_messages_and_clears_them() -> None:
 
     ready_messages = await dlq.replay()
 
-    assert ready_messages == [{"id": 2}]
+    assert len(ready_messages) == 1
+    ready_entry = ready_messages[0]
+    assert ready_entry["message"] == {"id": 2}
+    assert ready_entry["retry_count"] == 2
+    assert ready_entry["next_retry_at"] > time.time()
     stored_messages = await storage.read_all(queue_name)
     assert stored_messages == []
 
@@ -120,7 +124,9 @@ async def test_replay_discards_messages_over_retry_limit() -> None:
 async def test_dlq_updates_backlog_metric() -> None:
     storage = InMemoryStorage()
     queue_name = "dlq"
-    dlq = DeadLetterQueue(storage, queue_name, max_retries=5)
+    dlq = DeadLetterQueue(
+        storage, queue_name, max_retries=5, base_backoff_seconds=0.0
+    )
 
     await dlq.send({"id": 1})
     gauge = DLQ_BACKLOG.labels(queue=queue_name)
@@ -128,3 +134,18 @@ async def test_dlq_updates_backlog_metric() -> None:
 
     await dlq.replay()
     assert gauge._value.get() == 0  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_send_honors_custom_retry_metadata() -> None:
+    storage = InMemoryStorage()
+    queue_name = "dlq"
+    future_time = time.time() + 10
+    dlq = DeadLetterQueue(storage, queue_name, max_retries=5)
+
+    await dlq.send({"id": 99}, retry_count=3, next_retry_at=future_time)
+    stored_messages = await storage.read_all(queue_name)
+    assert stored_messages[0]["retry_count"] == 3
+    assert stored_messages[0]["next_retry_at"] == pytest.approx(
+        future_time, rel=0, abs=0.01
+    )

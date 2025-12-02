@@ -6,6 +6,11 @@ from urllib.parse import urlparse, urlunparse
 
 import structlog
 import websockets
+from websockets.exceptions import (
+    ConnectionClosed,
+    InvalidHandshake,
+    InvalidURI,
+)
 
 log = structlog.get_logger()
 
@@ -47,16 +52,32 @@ class WebSocketClient:
                         else:
                             recv_task.cancel()
                             break
-            except websockets.exceptions.ConnectionClosed:
+            except asyncio.CancelledError:
+                raise
+            except ConnectionClosed:
                 log.warning(
-                    "WebSocket connection closed, "
-                    "attempting to reconnect in %s seconds.",
-                    self._reconnect_delay,
+                    "websocket.closed_reconnecting",
+                    delay=self._reconnect_delay,
                 )
-                await asyncio.sleep(self._reconnect_delay)
-                self._reconnect_delay = min(
-                    self._reconnect_delay * 2, self._max_reconnect_delay
+            except (OSError, InvalidURI, InvalidHandshake, asyncio.TimeoutError) as exc:
+                log.warning(
+                    "websocket.connection_error",
+                    error=str(exc),
+                    delay=self._reconnect_delay,
                 )
+            except Exception:
+                log.exception(
+                    "websocket.unexpected_error_reconnecting",
+                    delay=self._reconnect_delay,
+                )
+
+            if self._stop.is_set():
+                break
+
+            await asyncio.sleep(self._reconnect_delay)
+            self._reconnect_delay = min(
+                self._reconnect_delay * 2, self._max_reconnect_delay
+            )
 
     async def close(self) -> None:
         """Close the websocket connection."""

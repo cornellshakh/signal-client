@@ -26,8 +26,8 @@ from .infrastructure.api_clients import (
 )
 from .infrastructure.schemas.message import Message
 from .infrastructure.api_clients.base_client import ClientConfig
-from .infrastructure.storage.redis import RedisStorage
-from .infrastructure.storage.sqlite import SQLiteStorage
+from .storage.redis import RedisStorage
+from .storage.sqlite import SQLiteStorage
 from .infrastructure.websocket_client import WebSocketClient
 from .services.circuit_breaker import CircuitBreaker
 from .services.dead_letter_queue import DeadLetterQueue

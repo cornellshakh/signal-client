@@ -4,8 +4,8 @@ import pytest
 
 from signal_client.config import Settings
 from signal_client.app import Application
-from signal_client.infrastructure.storage.redis import RedisStorage
-from signal_client.infrastructure.storage.sqlite import SQLiteStorage
+from signal_client.storage.redis import RedisStorage
+from signal_client.storage.sqlite import SQLiteStorage
 
 
 @pytest.mark.asyncio

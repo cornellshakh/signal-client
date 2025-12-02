@@ -1,16 +1,49 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import structlog
 
 if TYPE_CHECKING:
-    from signal_client.infrastructure.storage.base import Storage
+    from signal_client.storage.base import Storage
 
 from signal_client.metrics import DLQ_BACKLOG
 
 log = structlog.get_logger()
+
+
+@dataclass
+class DLQEntry:
+    payload: Any
+    retry_count: int
+    next_retry_at: float
+
+    def to_record(self) -> dict[str, Any]:
+        return {
+            "payload": self.payload,
+            # Preserve legacy 'message' key for compatibility with existing DLQ consumers.
+            "message": self.payload,
+            "retry_count": self.retry_count,
+            "next_retry_at": self.next_retry_at,
+        }
+
+    @classmethod
+    def from_record(
+        cls,
+        record: dict[str, Any],
+        *,
+        default_next_retry_at: float,
+    ) -> DLQEntry:
+        payload = record.get("payload", record.get("message"))
+        retry_count = int(record.get("retry_count", 0))
+        next_retry_at = float(record.get("next_retry_at", default_next_retry_at))
+        return cls(
+            payload=payload,
+            retry_count=retry_count,
+            next_retry_at=next_retry_at,
+        )
 
 
 class DeadLetterQueue:
@@ -33,7 +66,7 @@ class DeadLetterQueue:
 
     async def send(
         self,
-        message: dict[str, Any],
+        message: Any,
         *,
         retry_count: int = 0,
         next_retry_at: float | None = None,
@@ -46,13 +79,13 @@ class DeadLetterQueue:
             if next_retry_at is not None
             else self._compute_next_retry_at(retry_count)
         )
-        dlq_message = {
-            "message": message,
-            "retry_count": retry_count,
-            "next_retry_at": scheduled_for,
-        }
-        await self._storage.append(self._queue_name, dlq_message)
-        log.info(
+        entry = DLQEntry(
+            payload=message,
+            retry_count=retry_count,
+            next_retry_at=scheduled_for,
+        )
+        await self._storage.append(self._queue_name, entry.to_record())
+        log.debug(
             "dlq.message_enqueued",
             queue=self._queue_name,
             retry_count=retry_count,
@@ -72,29 +105,28 @@ class DeadLetterQueue:
         current_time = time.time()
 
         for msg in messages:
-            retry_count = msg.get("retry_count", 0)
-            if retry_count >= self._max_retries:
+            entry = DLQEntry.from_record(msg, default_next_retry_at=current_time)
+            if entry.retry_count >= self._max_retries:
                 log.warning(
                     "dlq.message_discarded",
                     queue=self._queue_name,
-                    retry_count=retry_count,
+                    retry_count=entry.retry_count,
                 )
                 continue
 
-            next_retry_at = msg.get("next_retry_at", current_time)
-            if next_retry_at <= current_time:
-                updated_retry_count = retry_count + 1
+            if entry.next_retry_at <= current_time:
+                updated_retry_count = entry.retry_count + 1
                 ready_messages.append(
-                    {
-                        "message": msg["message"],
-                        "retry_count": updated_retry_count,
-                        "next_retry_at": self._compute_next_retry_at(
+                    DLQEntry(
+                        payload=entry.payload,
+                        retry_count=updated_retry_count,
+                        next_retry_at=self._compute_next_retry_at(
                             updated_retry_count
                         ),
-                    }
+                    ).to_record()
                 )
             else:
-                messages_to_keep.append(msg)
+                messages_to_keep.append(entry.to_record())
 
         for msg in messages_to_keep:
             await self._storage.append(self._queue_name, msg)
@@ -103,7 +135,8 @@ class DeadLetterQueue:
                 queue=self._queue_name,
                 retry_count=msg.get("retry_count", 0),
                 available_in=max(
-                    msg.get("next_retry_at", current_time) - current_time, 0
+                    msg.get("next_retry_at", current_time) - current_time,
+                    0,
                 ),
             )
 

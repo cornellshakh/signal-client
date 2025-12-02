@@ -47,9 +47,9 @@
 - [x] Keep `QueuedMessage` in `runtime/models.py`; ensure latency/depth metrics remain but simplify log keys and variable names for readability.
 
 ### Storage and DLQ
-- [ ] Move storage modules under `signal_client/storage/` (`base.py`, `sqlite.py`, `redis.py`); keep the interface minimal (`append`, `read_all`, `delete_all`, `close`).
-- [ ] Simplify `DeadLetterQueue`: keep backoff and metrics, reduce logging noise, and store raw payload + retry count clearly.
-- [ ] Update CLI/tests to new paths; maintain behavior parity.
+- [x] Move storage modules under `signal_client/storage/` (`base.py`, `sqlite.py`, `redis.py`); keep the interface minimal (`append`, `read_all`, `delete_all`, `close`).
+- [x] Simplify `DeadLetterQueue`: keep backoff and metrics, reduce logging noise, and store raw payload + retry count clearly.
+- [x] Update CLI/tests to new paths; maintain behavior parity.
 
 ### Observability Cohesion
 - [ ] Consolidate metrics and exporter into `observability/metrics.py` with `start_metrics_server(port, addr, registry=None)` and `render_metrics()`; keep Prometheus names stable.
@@ -118,9 +118,9 @@
 - [x] Keep `QueuedMessage` as a tiny dataclass in `runtime/models.py`; ensure latency metrics remain, but simplify names/log keys.
 
 ### Streamline Storage and DLQ
-- [ ] Rehome storage modules to `signal_client/storage/` with `base.py`, `sqlite.py`, `redis.py`; ensure interfaces are minimal (`append`, `read_all`, `delete_all`, `close`).
-- [ ] Simplify `DeadLetterQueue`: store raw payload + retry count; keep backoff helper but trim logging noise; ensure metrics updates remain.
-- [ ] Update CLI and tests to reflect new module paths.
+- [x] Rehome storage modules to `signal_client/storage/` with `base.py`, `sqlite.py`, `redis.py`; ensure interfaces are minimal (`append`, `read_all`, `delete_all`, `close`).
+- [x] Simplify `DeadLetterQueue`: store raw payload + retry count; keep backoff helper but trim logging noise; ensure metrics updates remain.
+- [x] Update CLI and tests to reflect new module paths.
 
 ### Observability Cleanup
 - [ ] Consolidate `metrics.py` and `metrics_server.py` into `observability/metrics.py`; expose a single `start_metrics_server(port, addr, registry=None)` and `render_metrics()`.

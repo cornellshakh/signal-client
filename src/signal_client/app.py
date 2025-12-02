@@ -8,7 +8,7 @@ from typing import Callable
 import aiohttp
 
 from .config import Settings
-from .entities import ContextDependencies
+from .context_deps import ContextDependencies
 from .infrastructure.api_clients import (
     AccountsClient,
     AttachmentsClient,

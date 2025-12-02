@@ -16,11 +16,15 @@ log = structlog.get_logger()
 
 
 class BackpressurePolicy(str, Enum):
+    """Queue overflow handling strategy: fail fast or drop the oldest."""
+
     FAIL_FAST = "fail_fast"
     DROP_OLDEST = "drop_oldest"
 
 
 class MessageService:
+    """Stream websocket messages into an asyncio.Queue with explicit backpressure."""
+
     def __init__(
         self,
         websocket_client: WebSocketClient,

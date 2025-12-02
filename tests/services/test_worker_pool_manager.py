@@ -11,7 +11,7 @@ import pytest
 from signal_client.bot import SignalClient
 from signal_client.command import Command, command
 from signal_client.context import Context
-from signal_client.entities import ContextDependencies
+from signal_client.context_deps import ContextDependencies
 from signal_client.observability.metrics import (
     MESSAGE_QUEUE_DEPTH,
     MESSAGE_QUEUE_LATENCY,

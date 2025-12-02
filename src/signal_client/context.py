@@ -12,7 +12,7 @@ from .infrastructure.schemas.requests import (
 )
 
 if TYPE_CHECKING:
-    from .entities import ContextDependencies
+    from .context_deps import ContextDependencies
 
 
 class Context:

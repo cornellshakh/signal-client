@@ -62,9 +62,9 @@
 - [ ] Leave `release_guard.py` intact unless tests require adjustments.
 
 ### Naming and Documentation Pass
-- [ ] Rename generic modules (`entities.py`, `services/models.py`) to clearer equivalents (`context_deps.py`, `runtime/models.py`) and update imports.
-- [ ] Refresh README Quickstart to reflect the new builder/CLI and include a brief architecture outline matching the package layout.
-- [ ] Keep docstrings where logic is non-obvious (backpressure policy, circuit breaker thresholds); keep them concise and action-oriented.
+- [x] Rename generic modules (`entities.py`, `services/models.py`) to clearer equivalents (`context_deps.py`, `runtime/models.py`) and update imports.
+- [x] Refresh README Quickstart to reflect the new builder/CLI and include a brief architecture outline matching the package layout.
+- [x] Keep docstrings where logic is non-obvious (backpressure policy, circuit breaker thresholds); keep them concise and action-oriented.
 
 ### Verification
 - [ ] Run quality gate: `poetry run ruff check .`; `poetry run black --check src tests`; `poetry run mypy src`; `poetry run pytest-safe -n auto --cov=signal_client`.
@@ -133,9 +133,9 @@
 - [ ] Ensure `release_guard.py` stays untouched unless tests require changes.
 
 ### Naming and Documentation Pass
-- [ ] Rename generic modules (`entities.py`, `services/models.py`) to clearer counterparts (`context_deps.py`, `runtime/models.py`), updating imports.
-- [ ] Update README Quickstart to reflect new builder/CLI, and include a short architecture diagram (bullet list) that mirrors the new package layout.
-- [ ] Add inline docstrings where logic is non-obvious (backpressure policy, circuit breaker thresholds), keep them concise.
+- [x] Rename generic modules (`entities.py`, `services/models.py`) to clearer counterparts (`context_deps.py`, `runtime/models.py`), updating imports.
+- [x] Update README Quickstart to reflect new builder/CLI, and include a short architecture diagram (bullet list) that mirrors the new package layout.
+- [x] Add inline docstrings where logic is non-obvious (backpressure policy, circuit breaker thresholds), keep them concise.
 
 ### Verification
 - [ ] Run the quality gate: `poetry run ruff check .`, `poetry run black --check src tests`, `poetry run mypy src`, `poetry run pytest-safe -n auto --cov=signal_client`.

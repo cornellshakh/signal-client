@@ -8,7 +8,7 @@ import pytest
 
 from signal_client import SignalClient
 from signal_client.context import Context
-from signal_client.entities import ContextDependencies
+from signal_client.context_deps import ContextDependencies
 
 
 @pytest.fixture

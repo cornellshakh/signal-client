@@ -7,7 +7,7 @@ import pytest
 
 from signal_client import SignalClient
 from signal_client.context import Context
-from signal_client.entities import ContextDependencies
+from signal_client.context_deps import ContextDependencies
 from signal_client.infrastructure.schemas.message import Message, MessageType
 from signal_client.infrastructure.schemas.requests import SendMessageRequest
 

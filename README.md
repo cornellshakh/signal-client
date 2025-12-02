@@ -27,13 +27,21 @@ async def ping(ctx: Context) -> None:
 
 
 async def main() -> None:
-    bot = SignalClient()
-    bot.register(ping)
-    await bot.start()
+    async with SignalClient() as bot:
+        bot.register(ping)
+        await bot.start()
 
 
 asyncio.run(main())
 ```
+
+## Architecture at a glance
+- `signal_client/config.py`: single pydantic `Settings` mapping required env vars and runtime knobs.
+- `signal_client/app.py`: explicit builder wiring settings → websocket listener → queue/backpressure → worker pool/router → API clients/storage.
+- `signal_client/runtime/`: listener, backpressure policy, worker pool, command router, middleware hooks, queue models.
+- `signal_client/api/` + `signal_client/infrastructure/api_clients/`: REST clients; shared `ClientConfig`.
+- `signal_client/storage/`: sqlite/redis backends and DLQ helpers.
+- `signal_client/observability/`: metrics (Prometheus) and structlog bootstrap.
 
 ## Configuration
 

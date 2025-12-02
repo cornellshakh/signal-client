@@ -30,6 +30,8 @@ class EndpointState:
 
 
 class CircuitBreaker:
+    """Simple circuit breaker with counts, failure rate threshold, and timed resets."""
+
     def __init__(
         self,
         failure_threshold: int,
@@ -45,6 +47,7 @@ class CircuitBreaker:
 
     @asynccontextmanager
     async def guard(self, endpoint_key: str) -> AsyncGenerator[None, None]:
+        """Yield if allowed; trip when consecutive or rate-based failure thresholds are exceeded."""
         endpoint_state = self._endpoint_states.setdefault(endpoint_key, EndpointState())
         self._record_state(endpoint_key, endpoint_state.state)
 

@@ -1,8 +1,5 @@
-from __future__ import annotations
-
-from __future__ import annotations
-
-from .observability.metrics import (
+from .logging import ensure_structlog_configured, reset_structlog_configuration_guard
+from .metrics import (
     API_CLIENT_PERFORMANCE,
     CIRCUIT_BREAKER_STATE,
     DLQ_BACKLOG,
@@ -26,4 +23,6 @@ __all__ = [
     "RATE_LIMITER_WAIT",
     "render_metrics",
     "start_metrics_server",
+    "ensure_structlog_configured",
+    "reset_structlog_configuration_guard",
 ]

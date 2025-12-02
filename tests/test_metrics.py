@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from prometheus_client import CollectorRegistry, Counter
 
-from signal_client.metrics import (
+from signal_client.observability.metrics import (
     API_CLIENT_PERFORMANCE,
     CIRCUIT_BREAKER_STATE,
     DLQ_BACKLOG,

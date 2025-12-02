@@ -56,14 +56,15 @@ Settings are pydantic-based and loaded from env/.env via `Settings.from_sources(
 
 ## Metrics
 
-- Prometheus metrics are defined in `signal_client.metrics`. Expose them via:
+- Prometheus metrics live in `signal_client.observability.metrics`. Expose them via:
 
 ```python
-from signal_client.metrics_server import start_metrics_server
+from signal_client.observability.metrics import start_metrics_server
 
 start_metrics_server(port=9000, addr="0.0.0.0")
 ```
 
+- Defaults to `addr="127.0.0.1"` and `port=8000`; pass a registry to expose custom metrics.
 - This starts a lightweight HTTP endpoint at `/` that serves the Prometheus text format.
 
 ## CLI

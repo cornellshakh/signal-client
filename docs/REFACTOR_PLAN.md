@@ -52,9 +52,9 @@
 - [x] Update CLI/tests to new paths; maintain behavior parity.
 
 ### Observability Cohesion
-- [ ] Consolidate metrics and exporter into `observability/metrics.py` with `start_metrics_server(port, addr, registry=None)` and `render_metrics()`; keep Prometheus names stable.
-- [ ] Move structlog bootstrap into `observability/logging.py`; default to concise, JSON-optional output while respecting external configuration.
-- [ ] Document metrics usage and defaults in README.
+- [x] Consolidate metrics and exporter into `observability/metrics.py` with `start_metrics_server(port, addr, registry=None)` and `render_metrics()`; keep Prometheus names stable.
+- [x] Move structlog bootstrap into `observability/logging.py`; default to concise, JSON-optional output while respecting external configuration.
+- [x] Document metrics usage and defaults in README.
 
 ### CLI and Tooling
 - [x] Replace the Typer CLI with a minimal, dependency-free CLI (`python -m signal_client.cli`) that supports `dlq inspect` (and optional `dlq purge`) without global containers.
@@ -123,9 +123,9 @@
 - [x] Update CLI and tests to reflect new module paths.
 
 ### Observability Cleanup
-- [ ] Consolidate `metrics.py` and `metrics_server.py` into `observability/metrics.py`; expose a single `start_metrics_server(port, addr, registry=None)` and `render_metrics()`.
-- [ ] Move structlog bootstrapper from `bot.py` into `observability/logging.py`; keep the guard to respect external configuration but make defaults shorter (no JSON renderer unless requested).
-- [ ] Document metrics usage in README (one short section with code snippet and default bind address).
+- [x] Consolidate `metrics.py` and `metrics_server.py` into `observability/metrics.py`; expose a single `start_metrics_server(port, addr, registry=None)` and `render_metrics()`.
+- [x] Move structlog bootstrapper from `bot.py` into `observability/logging.py`; keep the guard to respect external configuration but make defaults shorter (no JSON renderer unless requested).
+- [x] Document metrics usage in README (one short section with code snippet and default bind address).
 
 ### CLI and Tooling
 - [x] Replace Typer-based CLI with a minimal `python -m signal_client.cli` that supports `dlq inspect` (and optionally `dlq purge`) via argparse or plain functions; avoid global container usage.

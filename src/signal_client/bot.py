@@ -5,41 +5,14 @@ from collections.abc import Awaitable, Callable
 from types import TracebackType
 from typing import TYPE_CHECKING, Self
 
-import structlog
-
 from .command import Command
 from .compatibility import check_supported_versions
 from .config import Settings
 from .app import Application
-
-
-class _StructlogConfigurator:
-    _configured = False
-
-    @classmethod
-    def ensure_configured(cls) -> None:
-        if cls._configured:
-            return
-
-        if getattr(structlog, "is_configured", None) and structlog.is_configured():
-            cls._configured = True
-            return
-
-        structlog.configure(
-            processors=[
-                structlog.contextvars.merge_contextvars,
-                structlog.processors.add_log_level,
-                structlog.processors.StackInfoRenderer(),
-                structlog.dev.set_exc_info,
-                structlog.processors.TimeStamper(fmt="iso"),
-                structlog.processors.JSONRenderer(),
-            ]
-        )
-        cls._configured = True
-
-    @classmethod
-    def reset(cls) -> None:
-        cls._configured = False
+from .observability.logging import (
+    ensure_structlog_configured,
+    reset_structlog_configuration_guard,
+)
 
 
 if TYPE_CHECKING:
@@ -63,7 +36,7 @@ class SignalClient:
             Callable[[Context, Callable[[Context], Awaitable[None]]], Awaitable[None]]
         ] = []
 
-        _StructlogConfigurator.ensure_configured()
+        ensure_structlog_configured()
 
     def register(self, command: Command) -> None:
         """Register a new command."""
@@ -180,4 +153,4 @@ class SignalClient:
 
 def reset_structlog_configuration_for_tests() -> None:
     """Reset structlog configuration guard. Intended for use in tests."""
-    _StructlogConfigurator.reset()
+    reset_structlog_configuration_guard()

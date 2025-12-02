@@ -3,7 +3,7 @@
 [![CI](https://github.com/cornellsh/signal-client/actions/workflows/ci.yml/badge.svg)](https://github.com/cornellsh/signal-client/actions/workflows/ci.yml)
 [![License](https://img.shields.io/pypi/l/signal_client.svg)](https://github.com/cornellsh/signal_client/blob/main/LICENSE)
 
-Async Python framework for building Signal bots. The core loop consumes websocket messages, enqueues them with backpressure, fans out to workers, normalizes payloads, and dispatches command handlers that can call REST API clients or send replies via context helpers.
+Async Python framework for building Signal bots. The core loop consumes websocket messages, enqueues them with explicit backpressure, fans out to workers, normalizes payloads, and dispatches command handlers that can call REST API clients or send replies via context helpers.
 
 ## Quickstart
 
@@ -12,45 +12,51 @@ poetry install --sync
 export SIGNAL_PHONE_NUMBER=+1234567890
 export SIGNAL_SERVICE_URL=https://signal.example.com
 export SIGNAL_API_URL=https://signal.example.com
-poetry run python -m signal_client.compatibility --strict  # optional guard
 ```
 
 ```python
-from signal_client import SignalClient, command, Context
+import asyncio
+
+from signal_client import Context, SignalClient, command
+from signal_client.infrastructure.schemas.requests import SendMessageRequest
+
 
 @command("!ping")
 async def ping(ctx: Context) -> None:
-    await ctx.reply({"message": "pong", "recipients": []})
+    await ctx.reply(SendMessageRequest(message="pong", recipients=[]))
 
-bot = SignalClient()
-bot.register(ping)
-bot.run()
+
+async def main() -> None:
+    bot = SignalClient()
+    bot.register(ping)
+    await bot.start()
+
+
+asyncio.run(main())
 ```
 
 ## Configuration
 
-Settings are pydantic-based and loaded from env/.env, with aliases:
+Settings are pydantic-based and loaded from env/.env via `Settings.from_sources(config=overrides)`.
 
-- `SIGNAL_PHONE_NUMBER` (required)
-- `SIGNAL_SERVICE_URL` (required, ws/wss inferred)
-- `SIGNAL_API_URL` (required, http/https)
-- Storage: `STORAGE_TYPE` (`sqlite` default, `redis`), `SQLITE_DATABASE`, `REDIS_HOST`, `REDIS_PORT`
-- Queue/backpressure: `QUEUE_SIZE` (default 1000), `QUEUE_PUT_TIMEOUT` (seconds), `QUEUE_DROP_OLDEST_ON_TIMEOUT` (default true)
+- Required: `SIGNAL_PHONE_NUMBER`, `SIGNAL_SERVICE_URL` (ws/wss inferred), `SIGNAL_API_URL` (http/https)
+- Storage: `STORAGE_TYPE` (`sqlite` default, or `redis`), `SQLITE_DATABASE`, `REDIS_HOST`, `REDIS_PORT`
+- Queue/backpressure: `QUEUE_SIZE` (default 1000), `QUEUE_PUT_TIMEOUT` seconds, `QUEUE_DROP_OLDEST_ON_TIMEOUT` (default true), `WORKER_POOL_SIZE`
 - DLQ: `DLQ_NAME`, `DLQ_MAX_RETRIES`
-- Circuit breaker, rate limiter, and API retry knobs are available under their respective prefixes.
+- API resiliency: `API_RETRIES`, `API_BACKOFF_FACTOR`, `API_TIMEOUT`, rate limiter and circuit breaker knobs (`RATE_LIMIT`, `RATE_LIMIT_PERIOD`, `CIRCUIT_BREAKER_*`)
 
 ## Backpressure and DLQ semantics
 
-- Enqueue uses a timeout; on timeout the default behavior is lossy: drop the oldest message, then retry putting the new one. Set `queue_drop_oldest_on_timeout=False` to fail fast instead (dropped payloads go to DLQ if configured).
-- DLQ entries now carry `retry_count` and an exponential backoff (`next_retry_at`). `replay()` only returns entries that are ready and under the max retry count.
+- Backpressure is explicit: enqueue waits up to `queue_put_timeout` and then either fails fast or drops the oldest item depending on `queue_drop_oldest_on_timeout` (maps to `BackpressurePolicy.FAIL_FAST` vs `DROP_OLDEST`). Dropped payloads are routed to the DLQ when configured.
+- DLQ entries carry `retry_count` and `next_retry_at` with exponential backoff; `replay()` only returns entries ready for processing and below `dlq_max_retries`.
 
 ## Command routing
 
-- Command triggers are compiled into regexes sorted lexicographically, not by registration order. Prefer disjoint patterns or add explicit regex anchors to avoid surprises.
+- Command triggers preserve registration order. Regex triggers are evaluated after literal triggers in the order they were registered.
 
 ## Metrics
 
-- Prometheus metrics are defined in `signal_client.metrics`. Expose them via the helper:
+- Prometheus metrics are defined in `signal_client.metrics`. Expose them via:
 
 ```python
 from signal_client.metrics_server import start_metrics_server
@@ -59,6 +65,10 @@ start_metrics_server(port=9000, addr="0.0.0.0")
 ```
 
 - This starts a lightweight HTTP endpoint at `/` that serves the Prometheus text format.
+
+## CLI
+
+- Minimal DLQ tooling is available via `python -m signal_client.cli dlq inspect` (or `poetry run inspect-dlq`).
 
 ## Operations
 

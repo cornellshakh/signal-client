@@ -21,9 +21,9 @@ class SupportedRange:
 
 
 SUPPORTED_MATRIX: dict[str, SupportedRange] = {
-    "dependency-injector": SupportedRange(Version("4.48.0"), Version("4.49.0")),
-    "structlog": SupportedRange(Version("24.4.0"), Version("24.5.0")),
     "pydantic": SupportedRange(Version("2.12.0"), Version("2.13.0")),
+    "structlog": SupportedRange(Version("24.4.0"), Version("24.5.0")),
+    "aiohttp": SupportedRange(Version("3.11.9"), Version("4.0.0")),
 }
 
 

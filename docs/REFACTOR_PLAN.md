@@ -29,7 +29,7 @@
 
 ### Baseline and Safety
 - [x] Confirm current baseline with `poetry run pytest-safe -n auto --cov=signal_client`; baseline green on Python 3.13.7 (118 tests).
-- [ ] Track any public-surface adjustments and update README/examples when they occur.
+- [x] Track any public-surface adjustments and update README/examples when they occur.
 
 ### Configuration Simplification (clear, typed)
 - [x] Replace multi-mixin `Settings` and custom env-merging helpers with a single pydantic model that directly maps required envs (`SIGNAL_PHONE_NUMBER`, `SIGNAL_SERVICE_URL`, `SIGNAL_API_URL`) and grouped options (queue, dlq, api, rate limiter, circuit breaker, storage).
@@ -57,8 +57,8 @@
 - [ ] Document metrics usage and defaults in README.
 
 ### CLI and Tooling
-- [ ] Replace the Typer CLI with a minimal, dependency-free CLI (`python -m signal_client.cli`) that supports `dlq inspect` (and optional `dlq purge`) without global containers.
-- [ ] Re-evaluate `compatibility.py`: keep as a simple optional guard or drop if redundant; ensure tests reflect the chosen path.
+- [x] Replace the Typer CLI with a minimal, dependency-free CLI (`python -m signal_client.cli`) that supports `dlq inspect` (and optional `dlq purge`) without global containers.
+- [x] Re-evaluate `compatibility.py`: keep as a simple optional guard or drop if redundant; ensure tests reflect the chosen path.
 - [ ] Leave `release_guard.py` intact unless tests require adjustments.
 
 ### Naming and Documentation Pass
@@ -99,7 +99,7 @@
 
 ### Baseline and Safety
 - [x] Snapshot current behavior: run `poetry run pytest-safe -n auto --cov=signal_client` to confirm the starting point (record failures if any); baseline green on Python 3.13.7 (118 tests).
-- [ ] Document any public API changes as you implement tasks; update README examples accordingly.
+- [x] Document any public API changes as you implement tasks; update README examples accordingly.
 
 ### Simplify Configuration
 - [x] Replace the multi-mixin `Settings` + helper functions with a single `Settings` dataclass/pydantic model that directly maps required env vars (`SIGNAL_PHONE_NUMBER`, `SIGNAL_SERVICE_URL`, `SIGNAL_API_URL`) and simple option groups (queue, dlq, api, rate limiter, circuit breaker, storage).
@@ -128,8 +128,8 @@
 - [ ] Document metrics usage in README (one short section with code snippet and default bind address).
 
 ### CLI and Tooling
-- [ ] Replace Typer-based CLI with a minimal `python -m signal_client.cli` that supports `dlq inspect` (and optionally `dlq purge`) via argparse or plain functions; avoid global container usage.
-- [ ] Evaluate `compatibility.py` guard; either drop it or reduce to a single optional `check_supported_versions()` helper invoked only in CLI/dev paths.
+- [x] Replace Typer-based CLI with a minimal `python -m signal_client.cli` that supports `dlq inspect` (and optionally `dlq purge`) via argparse or plain functions; avoid global container usage.
+- [x] Evaluate `compatibility.py` guard; either drop it or reduce to a single optional `check_supported_versions()` helper invoked only in CLI/dev paths.
 - [ ] Ensure `release_guard.py` stays untouched unless tests require changes.
 
 ### Naming and Documentation Pass

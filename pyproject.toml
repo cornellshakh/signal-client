@@ -35,12 +35,10 @@ websockets = ">=14.1,<15.0"
 phonenumbers = ">=8.13.54,<9.0"
 pydantic = ">=2.12.0,<2.13.0"
 packaging = ">=25.0,<26.0"
-dependency-injector = ">=4.48.0,<4.49.0"
 aiosqlite = ">=0.20.0,<1.0.0"
 structlog = ">=24.4.0,<24.5.0"
 eval-type-backport = {version = ">=0.2.0", python = "<3.10"}
 pydantic-settings = ">=2.11.0,<2.12.0"
-typer = "^0.12.3"
 prometheus-client = ">=0.20.0,<1.0.0"
 
 [tool.poetry.group.dev.dependencies]

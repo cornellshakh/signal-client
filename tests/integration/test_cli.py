@@ -36,6 +36,7 @@ def override_container_settings(monkeypatch):
 
     yield container
 
+    asyncio.run(container.storage_container.storage().close())
     container.shutdown_resources()
 
 

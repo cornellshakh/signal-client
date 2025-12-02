@@ -135,6 +135,10 @@ class SignalClient:
         # 4. Close the session and shutdown resources
         session = self.container.api_client_container.session()
         await session.close()
+        storage = self.container.storage_container.storage()
+        close_storage = getattr(storage, "close", None)
+        if close_storage is not None:
+            await close_storage()
         self.container.shutdown_resources()
 
     def _register_with_worker_pool(self, command: Command) -> None:

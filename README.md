@@ -7,11 +7,42 @@ Async Python framework for building Signal bots. The core loop consumes websocke
 
 ## Quickstart
 
+### Run the Signal backend (signal-cli-rest-api)
+
+This library expects a running [bbernhard/signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) instance for both the websocket stream and REST endpoints.
+
+1) Create a persistent config directory so re-creating the container does not lose your registration:
+
+```bash
+mkdir -p $HOME/.local/share/signal-api
+```
+
+2) Start the REST API (native mode is fast on most platforms):
+
+```bash
+docker run -d --name signal-api --restart=always -p 8080:8080 \
+  -v $HOME/.local/share/signal-api:/home/.local/share/signal-cli \
+  -e 'MODE=native' bbernhard/signal-cli-rest-api:latest
+```
+
+3) Link or register your Signal number:
+- Easiest: open `http://localhost:8080/v1/qrcodelink?device_name=signal-api` and pair this container as a linked device in the Signal mobile app (Settings → Linked Devices → +).
+- Alternatively: use `/v1/register/<number>` + `/v1/verify/<number>` if registering this container as primary (see upstream README for details).
+
+4) Smoke test the REST API:
+
+```bash
+curl -X POST -H "Content-Type: application/json" 'http://localhost:8080/v2/send' \
+  -d '{"message": "hello from signal-cli-rest-api", "number": "+15551234567", "recipients": ["+15557654321"]}'
+```
+
+5) Configure `signal-client` to point at the REST API (HTTP will be converted to ws/wss for the websocket stream):
+
 ```bash
 poetry install --sync
 export SIGNAL_PHONE_NUMBER=+1234567890
-export SIGNAL_SERVICE_URL=https://signal.example.com
-export SIGNAL_API_URL=https://signal.example.com
+export SIGNAL_SERVICE_URL=http://localhost:8080
+export SIGNAL_API_URL=http://localhost:8080
 ```
 
 ```python

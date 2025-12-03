@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from typing import TypeVar
+
 from pydantic import BaseModel, ValidationError, field_validator
+
+
+T = TypeVar("T", bound="TimestampedResponse")
 
 
 class TimestampedResponse(BaseModel):
@@ -21,7 +26,7 @@ class TimestampedResponse(BaseModel):
         return None
 
     @classmethod
-    def from_raw(cls, payload: object | None) -> TimestampedResponse | None:
+    def from_raw(cls: type[T], payload: object | None) -> T | None:
         if payload is None:
             return None
 

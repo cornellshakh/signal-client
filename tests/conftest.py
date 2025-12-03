@@ -70,10 +70,18 @@ async def bot(mock_env_vars: None) -> AsyncGenerator[SignalClient, None]:
         sticker_packs_client=api_clients.sticker_packs,
         lock_manager=bot.app.lock_manager,
         phone_number=bot.settings.phone_number,
+        settings=bot.settings,
     )
-    bot.app.context_factory = lambda message: Context(
-        message=message, dependencies=bot.app.context_dependencies
-    )
+    from signal_client.infrastructure.schemas.message import Message
+
+    def _context_factory(message: Message) -> Context:
+        if bot.app.context_dependencies is None:
+            raise RuntimeError("Context dependencies not initialized")
+        return Context(
+            message=message, dependencies=bot.app.context_dependencies
+        )
+
+    bot.app.context_factory = _context_factory
     if bot.app.worker_pool is not None:
         bot.app.worker_pool._context_factory = bot.app.context_factory
     yield bot
@@ -99,4 +107,5 @@ def context_dependencies(bot: SignalClient) -> ContextDependencies:
         sticker_packs_client=bot.api_clients.sticker_packs,
         lock_manager=bot.app.lock_manager,
         phone_number=bot.settings.phone_number,
+        settings=bot.settings,
     )

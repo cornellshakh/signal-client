@@ -166,7 +166,7 @@ async def test_remote_delete_defaults_recipient(
 
     response = await context.remote_delete(target_timestamp=123)
 
-    (request_dict,) = delete_mock.call_args.args
+    _, request_dict = delete_mock.call_args.args
     assert request_dict["recipient"] == "user1"
     assert request_dict["timestamp"] == 123
     assert response is not None

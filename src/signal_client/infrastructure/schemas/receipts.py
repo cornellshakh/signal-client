@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ReceiptRequest(BaseModel):
@@ -13,15 +13,22 @@ class ReceiptRequest(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
-    @field_validator("recipient")
+    @model_validator(mode="before")
     @classmethod
-    def ensure_recipient(cls, recipient: str | None, values: dict[str, object]) -> str:
+    def populate_recipient(cls, values: dict[str, object]) -> dict[str, object]:
+        recipient = values.get("recipient")
         if recipient:
-            return recipient
+            return values
 
         group = values.get("group")
         if isinstance(group, str) and group:
-            return group
+            values["recipient"] = group
+        return values
+
+    @model_validator(mode="after")
+    def ensure_recipient(self) -> ReceiptRequest:
+        if self.recipient:
+            return self
 
         message = "recipient is required for receipts"
         raise ValueError(message)

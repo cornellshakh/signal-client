@@ -112,6 +112,9 @@ def get_swagger_spec() -> dict[str, Any]:
             return _read_cached_spec(SWAGGER_CACHE_PATH)
         raise SwaggerSpecDownloadError(SWAGGER_URL) from exc
 
+    if payload is None:
+        raise SwaggerSpecDownloadError(SWAGGER_URL)
+
     spec = json.loads(payload)
     try:
         SWAGGER_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)

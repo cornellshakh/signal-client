@@ -20,6 +20,9 @@ class SendMessageRequest(BaseModel):
     base64_attachments: list[str] = Field(default_factory=list)
     mentions: list[MessageMention] | None = None
     quote_mentions: list[MessageMention] | None = None
+    sticker: str | None = None
+    notify_self: bool | None = None
+    edit_timestamp: int | None = None
     view_once: bool = False
     quote_author: str | None = None
     quote_message: str | None = None
@@ -33,3 +36,13 @@ class SendMessageRequest(BaseModel):
 class TypingIndicatorRequest(BaseModel):
     group: str | None = None
     recipient: str | None = None
+
+
+class RemoteDeleteRequest(BaseModel):
+    recipient: str
+    timestamp: int
+
+
+class AddStickerPackRequest(BaseModel):
+    pack_id: str
+    pack_key: str

@@ -49,12 +49,11 @@ export SIGNAL_API_URL=http://localhost:8080
 import asyncio
 
 from signal_client import Context, SignalClient, command
-from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
 
 @command("!ping")
 async def ping(ctx: Context) -> None:
-    await ctx.reply(SendMessageRequest(message="pong", recipients=[]))
+    await ctx.reply_text("pong")
 
 
 async def main() -> None:
@@ -65,6 +64,13 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
+
+## Context helpers
+- `send_text` / `reply_text` and `send_markdown` (text_mode="styled") handle recipient/number defaults automatically.
+- `send_with_preview(url, title?, description?)` for link previews; `send_view_once(attachments)` for disappearing attachments.
+- `send_sticker(pack_id, sticker_id)` to deliver a sticker by reference.
+- `reply_with_quote_mentions` and `mention_author` to safely build mention ranges.
+- `show_typing`/`hide_typing`, `send_receipt(timestamp, type="read"|"viewed")`, and `remote_delete(timestamp)` wrap the corresponding REST calls with sane defaults.
 
 ## Architecture at a glance
 - `signal_client/config.py`: single pydantic `Settings` mapping required env vars and runtime knobs.
@@ -123,3 +129,7 @@ start_metrics_server(port=9000, addr="0.0.0.0")
 - Local quality gate: `poetry run ruff check .`; `poetry run black --check src tests`; `poetry run mypy src`; `poetry run pytest-safe -n auto --cov=signal_client`.
 - CI runs linting, formatting, mypy, security scans (`pip-audit`), unit/integration tests, API parity audits (`audit-api`), and `release-guard` on every push.
 - `release-guard` blocks releases until compatibility notes/migrations are confirmed.
+
+## API limitations
+- Profiles are update-only per swagger; profile fetch endpoints are intentionally unsupported.
+- The REST API does not expose message history; rely on the websocket stream for persistence.

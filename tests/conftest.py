@@ -47,6 +47,8 @@ async def bot(mock_env_vars: None) -> AsyncGenerator[SignalClient, None]:
     api_clients.groups = AsyncMock()
     api_clients.identities = AsyncMock()
     api_clients.messages = AsyncMock()
+    api_clients.messages.send.return_value = {"timestamp": "1"}
+    api_clients.messages.remote_delete.return_value = {"timestamp": "2"}
     api_clients.profiles = AsyncMock()
     api_clients.reactions = AsyncMock()
     api_clients.receipts = AsyncMock()

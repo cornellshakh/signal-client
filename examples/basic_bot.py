@@ -10,12 +10,10 @@ import asyncio
 
 from signal_client import Context, SignalClient
 from signal_client.command import command
-from signal_client.infrastructure.schemas.requests import SendMessageRequest
-
 
 @command("!ping")
 async def ping(ctx: Context) -> None:
-    await ctx.reply(SendMessageRequest(message="pong", recipients=[]))
+    await ctx.reply_text("pong")
 
 
 async def main() -> None:

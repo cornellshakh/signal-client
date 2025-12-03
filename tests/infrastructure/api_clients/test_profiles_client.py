@@ -22,3 +22,21 @@ async def test_update_profile(
         cast("Any", aresponses.Response(status=204)),
     )
     await profiles_client.update_profile(phone_number, profile_data)
+
+
+@pytest.mark.asyncio
+async def test_get_profile_is_unsupported(
+    profiles_client: ProfilesClient,
+) -> None:
+    phone_number = "+1234567890"
+    with pytest.raises(NotImplementedError):
+        await profiles_client.get_profile(phone_number)
+
+
+@pytest.mark.asyncio
+async def test_get_profile_avatar_is_unsupported(
+    profiles_client: ProfilesClient,
+) -> None:
+    phone_number = "+1234567890"
+    with pytest.raises(NotImplementedError):
+        await profiles_client.get_profile_avatar(phone_number)

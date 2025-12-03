@@ -7,9 +7,12 @@ from .base_client import BaseClient
 
 class ProfilesClient(BaseClient):
     async def get_profile(self, phone_number: str) -> dict[str, Any]:
-        """Get a profile."""
-        response = await self._make_request("GET", f"/v1/profiles/{phone_number}")
-        return cast("dict[str, Any]", response)
+        """Profiles are update-only in swagger; GET is unsupported."""
+        msg = (
+            "Retrieving profiles via REST is not supported. "
+            "Use update_profile to push profile changes instead."
+        )
+        raise NotImplementedError(msg)
 
     async def update_profile(
         self, phone_number: str, data: dict[str, Any]
@@ -21,9 +24,9 @@ class ProfilesClient(BaseClient):
         return cast("dict[str, Any]", response)
 
     async def get_profile_avatar(self, phone_number: str) -> bytes:
-        """Get a profile avatar."""
-        response = await self._make_request(
-            "GET",
-            f"/v1/profiles/{phone_number}/avatar",
+        """Profiles are update-only in swagger; GET is unsupported."""
+        msg = (
+            "Retrieving profile avatars via REST is not supported. "
+            "Use update_profile with a base64 avatar payload instead."
         )
-        return cast("bytes", response)
+        raise NotImplementedError(msg)

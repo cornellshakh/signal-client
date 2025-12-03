@@ -11,31 +11,19 @@ from signal_client.app import Application
 from signal_client.command import command
 from signal_client.config import Settings
 from signal_client.infrastructure.schemas.groups import CreateGroupRequest
-from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
 
 @command("!contacts")
 async def list_contacts(ctx: Context) -> None:
     me = ctx._phone_number  # Provided via ContextDependencies.
     contacts = await ctx.contacts.get_contacts(me)
-    await ctx.reply(
-        SendMessageRequest(
-            message=f"found {len(contacts)} contacts",
-            recipients=[],
-        )
-    )
+    await ctx.reply_text(f"found {len(contacts)} contacts")
 
 
 @command("!history")
 async def last_messages(ctx: Context) -> None:
-    await ctx.reply(
-        SendMessageRequest(
-            message=(
-                "history is not exposed via signal-cli-rest-api; "
-                "persist websocket events instead."
-            ),
-            recipients=[],
-        )
+    await ctx.reply_text(
+        "history is not exposed via signal-cli-rest-api; persist websocket events instead."
     )
 
 
@@ -48,12 +36,7 @@ async def create_group(ctx: Context) -> None:
     ]
     request = CreateGroupRequest(name="signal-client example", members=members)
     group = await ctx.groups.create_group(me, request)
-    await ctx.reply(
-        SendMessageRequest(
-            message=f"created group {group.get('id', '<unknown>')}",
-            recipients=[],
-        )
-    )
+    await ctx.reply_text(f"created group {group.get('id', '<unknown>')}")
 
 
 async def run_bot() -> None:

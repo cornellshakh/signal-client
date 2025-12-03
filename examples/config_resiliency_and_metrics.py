@@ -7,7 +7,6 @@ import os
 
 from signal_client import Context, SignalClient
 from signal_client.command import command
-from signal_client.infrastructure.schemas.requests import SendMessageRequest
 from signal_client.metrics_server import start_metrics_server
 
 # Override defaults without touching environment variables for secrets.
@@ -34,16 +33,11 @@ CONFIG: dict[str, object] = {
 
 @command("!settings")
 async def settings_echo(ctx: Context) -> None:
-    await ctx.reply(
-        SendMessageRequest(
-            message=(
-                "Custom settings active: "
-                f"workers={CONFIG['worker_pool_size']}, "
-                f"queue={CONFIG['queue_size']}, "
-                f"retries={CONFIG['api_retries']}"
-            ),
-            recipients=[],
-        )
+    await ctx.reply_text(
+        "Custom settings active: "
+        f"workers={CONFIG['worker_pool_size']}, "
+        f"queue={CONFIG['queue_size']}, "
+        f"retries={CONFIG['api_retries']}"
     )
 
 

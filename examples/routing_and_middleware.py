@@ -12,7 +12,6 @@ import structlog
 
 from signal_client import Context, SignalClient
 from signal_client.command import command
-from signal_client.infrastructure.schemas.requests import SendMessageRequest
 
 log = structlog.get_logger()
 
@@ -43,17 +42,12 @@ async def dice(ctx: Context) -> None:
         return
     count, sides = (int(match.group(1)), int(match.group(2)))
     rolls = [random.randint(1, sides) for _ in range(count)]
-    await ctx.reply(
-        SendMessageRequest(
-            message=f"Rolled {count}d{sides}: {rolls} (total={sum(rolls)})",
-            recipients=[],
-        )
-    )
+    await ctx.reply_text(f"Rolled {count}d{sides}: {rolls} (total={sum(rolls)})")
 
 
 @command("!ADMIN", whitelisted=["+1234567890"], case_sensitive=True)
 async def admin_only(ctx: Context) -> None:
-    await ctx.reply(SendMessageRequest(message="admin OK", recipients=[]))
+    await ctx.reply_text("admin OK")
 
 
 async def main() -> None:

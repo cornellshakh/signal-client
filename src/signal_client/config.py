@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     worker_pool_size: int = 4
     queue_put_timeout: float = 1.0
     queue_drop_oldest_on_timeout: bool = True
+    durable_queue_enabled: bool = False
+    durable_queue_max_length: int = 10000
+    ingest_checkpoint_window: int = 5000
+    ingest_queue_name: str = "signal_client_ingest"
+    ingest_checkpoint_key: str = "signal_client_ingest_checkpoint"
+    ingest_pause_seconds: float = 1.0
+    distributed_locks_enabled: bool = False
+    distributed_lock_timeout: int = 30
 
     rate_limit: int = 50
     rate_limit_period: int = 1  # seconds
@@ -71,6 +79,18 @@ class Settings(BaseSettings):
                 raise ValueError(message)
         else:
             message = f"Unsupported storage_type '{self.storage_type}'."
+            raise ValueError(message)
+        if self.durable_queue_max_length <= 0:
+            message = "'durable_queue_max_length' must be positive."
+            raise ValueError(message)
+        if self.ingest_checkpoint_window <= 0:
+            message = "'ingest_checkpoint_window' must be positive."
+            raise ValueError(message)
+        if self.ingest_pause_seconds < 0:
+            message = "'ingest_pause_seconds' must be non-negative."
+            raise ValueError(message)
+        if self.distributed_lock_timeout <= 0:
+            message = "'distributed_lock_timeout' must be positive."
             raise ValueError(message)
         return self
 

@@ -20,6 +20,8 @@ from signal_client.observability.metrics import (
 )
 from signal_client.runtime.command_router import CommandRouter
 from signal_client.runtime.models import QueuedMessage
+from signal_client.services.checkpoint_store import IngestCheckpointStore
+from signal_client.services.dead_letter_queue import DeadLetterQueue
 from signal_client.services.message_parser import MessageParser
 
 log = structlog.get_logger()
@@ -36,6 +38,8 @@ class WorkerConfig:
     message_parser: MessageParser
     router: CommandRouter
     middleware: Iterable[MiddlewareCallable]
+    dead_letter_queue: DeadLetterQueue | None
+    checkpoint_store: IngestCheckpointStore | None
 
 
 class Worker:
@@ -47,6 +51,8 @@ class Worker:
         self._middleware: list[MiddlewareCallable] = list(config.middleware)
         self._stop = asyncio.Event()
         self._worker_id = worker_id
+        self._dead_letter_queue = config.dead_letter_queue
+        self._checkpoint_store = config.checkpoint_store
 
     def stop(self) -> None:
         self._stop.set()
@@ -75,7 +81,7 @@ class Worker:
                     )
                     message = self._message_parser.parse(queued_message.raw)
                     if message:
-                        await self.process(message, latency)
+                        await self.process(message, latency, queued_message=queued_message)
                         MESSAGES_PROCESSED.inc()
                 except UnsupportedMessageError as error:
                     log.debug("worker.unsupported_message", error=error)
@@ -86,6 +92,11 @@ class Worker:
                         raw_message=queued_message.raw,
                         worker_id=self._worker_id,
                     )
+                    await self._send_to_dlq(
+                        reason="parse_failed",
+                        raw=queued_message.raw,
+                        metadata={"worker_id": self._worker_id},
+                    )
                     ERRORS_OCCURRED.inc()
                 finally:
                     self._queue.task_done()
@@ -95,20 +106,34 @@ class Worker:
                 continue
 
     async def process(  # compatibility alias for legacy tests/callers
-        self, message: Message, queue_latency: float | None = None
+        self,
+        message: Message,
+        queue_latency: float | None = None,
+        *,
+        queued_message: QueuedMessage | None = None,
     ) -> None:
         structlog.contextvars.bind_contextvars(
             message_id=message.id,
             source=message.source,
             timestamp=message.timestamp,
         )
+        if await self._is_duplicate(message):
+            log.debug(
+                "worker.duplicate_suppressed",
+                message_id=str(message.id),
+                source=message.source,
+                timestamp=message.timestamp,
+            )
+            return
         context = self._context_factory(message)
         text = context.message.message
         if not isinstance(text, str) or not text:
+            await self._mark_checkpoint(message, queued_message)
             return
 
         command, trigger = self._router.match(text)
         if command is None or not self._is_whitelisted(command, context):
+            await self._mark_checkpoint(message, queued_message)
             return
 
         handler = getattr(command, "handle", None)
@@ -120,6 +145,7 @@ class Worker:
                 queue_latency=queue_latency,
             )
             await self._execute_with_middleware(command, context)
+            await self._mark_checkpoint(message, queued_message)
         except Exception:
             log.exception(
                 "worker.command_failed",
@@ -128,6 +154,18 @@ class Worker:
                 worker_id=self._worker_id,
                 queue_latency=queue_latency,
                 message_id=str(message.id),
+            )
+            await self._send_to_dlq(
+                reason="command_failed",
+                raw=queued_message.raw if queued_message else None,
+                metadata={
+                    "command": handler_name,
+                    "trigger": trigger,
+                    "worker_id": self._worker_id,
+                    "message_id": str(message.id),
+                    "source": message.source,
+                    "timestamp": message.timestamp,
+                },
             )
             ERRORS_OCCURRED.inc()
 
@@ -158,6 +196,60 @@ class Worker:
 
         await invoke(0, context)
 
+    async def _mark_checkpoint(
+        self, message: Message, queued_message: QueuedMessage | None
+    ) -> None:
+        if not self._checkpoint_store:
+            return
+        try:
+            await self._checkpoint_store.mark_processed(
+                source=message.source,
+                timestamp=message.timestamp,
+                enqueued_at=queued_message.enqueued_at if queued_message else None,
+            )
+        except Exception:  # pragma: no cover - defensive
+            log.warning(
+                "worker.checkpoint_failed",
+                source=message.source,
+                timestamp=message.timestamp,
+            )
+
+    async def _is_duplicate(self, message: Message) -> bool:
+        if not self._checkpoint_store:
+            return False
+        try:
+            return await self._checkpoint_store.is_duplicate(
+                source=message.source, timestamp=message.timestamp
+            )
+        except Exception:  # pragma: no cover - defensive
+            log.warning(
+                "worker.checkpoint_lookup_failed",
+                source=message.source,
+                timestamp=message.timestamp,
+            )
+            return False
+
+    async def _send_to_dlq(
+        self,
+        *,
+        reason: str,
+        raw: str | None,
+        metadata: dict[str, object] | None = None,
+    ) -> None:
+        if not self._dead_letter_queue or raw is None:
+            return
+        payload = {"raw": raw, "reason": reason}
+        if metadata:
+            payload["metadata"] = metadata
+        try:
+            await self._dead_letter_queue.send(payload)
+        except Exception:  # pragma: no cover - defensive
+            log.warning(
+                "worker.dlq_send_failed",
+                reason=reason,
+                worker_id=self._worker_id,
+            )
+
 
 class WorkerPool:
     def __init__(
@@ -168,6 +260,8 @@ class WorkerPool:
         *,
         router: CommandRouter | None = None,
         pool_size: int = 4,
+        dead_letter_queue: DeadLetterQueue | None = None,
+        checkpoint_store: IngestCheckpointStore | None = None,
     ) -> None:
         self._context_factory = context_factory
         self._queue = queue
@@ -179,6 +273,8 @@ class WorkerPool:
         self._workers: list[Worker] = []
         self._tasks: list[asyncio.Task[None]] = []
         self._started = asyncio.Event()
+        self._dead_letter_queue = dead_letter_queue
+        self._checkpoint_store = checkpoint_store
 
     @property
     def router(self) -> CommandRouter:
@@ -205,6 +301,8 @@ class WorkerPool:
                 message_parser=self._message_parser,
                 router=self._router,
                 middleware=self._middleware,
+                dead_letter_queue=self._dead_letter_queue,
+                checkpoint_store=self._checkpoint_store,
             )
             worker = Worker(worker_config, worker_id=worker_id)
             self._workers.append(worker)

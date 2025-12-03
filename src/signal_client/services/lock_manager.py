@@ -3,19 +3,30 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 import structlog
 
 log = structlog.get_logger()
 
+if TYPE_CHECKING:
+    import redis.asyncio as redis
+
 
 class LockManager:
     """A manager for asyncio.Lock objects to prevent race conditions."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        redis_client: "redis.Redis | None" = None,
+        lock_timeout_seconds: int = 30,
+    ) -> None:
         self._locks: dict[str, asyncio.Lock] = {}
         self._manager_lock = asyncio.Lock()
         self._holders: dict[str, asyncio.Task] = {}
+        self._redis_client = redis_client
+        self._lock_timeout_seconds = lock_timeout_seconds
 
     @asynccontextmanager
     async def lock(self, resource_id: str) -> AsyncGenerator[None, None]:
@@ -31,6 +42,28 @@ class LockManager:
                 resource_id=resource_id,
                 task=current_task.get_name(),
             )
+
+        if self._redis_client:
+            redis_lock = self._redis_client.lock(
+                resource_id, timeout=self._lock_timeout_seconds
+            )
+            acquired = await redis_lock.acquire(blocking=True)
+            if not acquired:
+                msg = f"Failed to acquire distributed lock for {resource_id}"
+                raise RuntimeError(msg)
+            try:
+                self._holders[resource_id] = current_task
+                yield
+            finally:
+                del self._holders[resource_id]
+                try:
+                    await redis_lock.release()
+                except Exception:  # pragma: no cover - release best effort
+                    log.warning(
+                        "Failed to release distributed lock.",
+                        resource_id=resource_id,
+                    )
+            return
 
         async with self._manager_lock:
             if resource_id not in self._locks:

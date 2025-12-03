@@ -11,6 +11,8 @@ from signal_client.infrastructure.websocket_client import WebSocketClient
 from signal_client.observability.metrics import MESSAGE_QUEUE_DEPTH
 from signal_client.runtime.models import QueuedMessage
 from signal_client.services.dead_letter_queue import DeadLetterQueue
+from signal_client.services.intake_controller import IntakeController
+from signal_client.services.persistent_queue import PersistentQueue
 
 log = structlog.get_logger()
 
@@ -30,6 +32,8 @@ class MessageService:
         websocket_client: WebSocketClient,
         queue: asyncio.Queue[QueuedMessage],
         dead_letter_queue: DeadLetterQueue | None = None,
+        persistent_queue: PersistentQueue | None = None,
+        intake_controller: IntakeController | None = None,
         *,
         enqueue_timeout: float = 1.0,
         backpressure_policy: BackpressurePolicy = BackpressurePolicy.DROP_OLDEST,
@@ -37,6 +41,8 @@ class MessageService:
         self._websocket_client = websocket_client
         self._queue = queue
         self._dead_letter_queue = dead_letter_queue
+        self._persistent_queue = persistent_queue
+        self._intake_controller = intake_controller
         self._enqueue_timeout = max(0.0, enqueue_timeout)
         self._backpressure_policy = backpressure_policy
 
@@ -47,10 +53,16 @@ class MessageService:
     async def listen(self) -> None:
         """Listen for incoming messages and apply explicit backpressure."""
         async for raw_message in self._websocket_client.listen():
+            if self._intake_controller:
+                await self._intake_controller.wait_if_paused()
             queued_message = QueuedMessage(
                 raw=raw_message, enqueued_at=time.perf_counter()
             )
             try:
+                if self._persistent_queue:
+                    await self._persistent_queue.append(
+                        raw_message, enqueued_at=queued_message.enqueued_at
+                    )
                 enqueued = await self._enqueue_with_backpressure(queued_message)
             except Exception:
                 log.exception("message_service.enqueue_failed")
@@ -69,6 +81,10 @@ class MessageService:
             if self._dead_letter_queue:
                 parsed_message = self._parse_for_dlq(raw_message)
                 await self._dead_letter_queue.send(parsed_message)
+            if self._intake_controller:
+                await self._intake_controller.pause(
+                    reason="backpressure", duration=self._enqueue_timeout
+                )
 
     async def _enqueue_with_backpressure(self, queued_message: QueuedMessage) -> bool:
         try:

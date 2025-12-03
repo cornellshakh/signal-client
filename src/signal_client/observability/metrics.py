@@ -31,6 +31,11 @@ DLQ_BACKLOG = Gauge(
     "Number of messages currently held in the dead letter queue",
     labelnames=("queue",),
 )
+INGEST_PAUSES = Counter(
+    "ingest_pauses_total",
+    "Number of times ingest was paused due to backpressure or circuit conditions",
+    labelnames=("reason",),
+)
 RATE_LIMITER_WAIT = Histogram(
     "rate_limiter_wait_seconds",
     "Amount of time spent waiting for rate limiter permits",

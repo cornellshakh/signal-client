@@ -43,7 +43,7 @@ class SQLiteStorage(Storage):
         try:
             db = await self._get_db()
             async with db.execute(
-                "SELECT value FROM signal_client_dlq WHERE key = ?",
+                "SELECT value FROM signal_client_dlq WHERE key = ? ORDER BY rowid ASC",
                 [key],
             ) as cursor:
                 results = await cursor.fetchall()

@@ -33,8 +33,11 @@ from .runtime.models import QueuedMessage
 from .runtime.worker_pool import WorkerPool
 from .services.circuit_breaker import CircuitBreaker
 from .services.dead_letter_queue import DeadLetterQueue
+from .services.intake_controller import IntakeController
 from .services.lock_manager import LockManager
+from .services.checkpoint_store import IngestCheckpointStore
 from .services.message_parser import MessageParser
+from .services.persistent_queue import PersistentQueue
 from .services.rate_limiter import RateLimiter
 from .storage.base import Storage
 from .storage.redis import RedisStorage
@@ -80,8 +83,11 @@ class Application:
         self.queue: asyncio.Queue[QueuedMessage] | None = None
         self.websocket_client: WebSocketClient | None = None
         self.dead_letter_queue: DeadLetterQueue | None = None
+        self.persistent_queue: PersistentQueue | None = None
+        self.ingest_checkpoint_store: IngestCheckpointStore | None = None
+        self.intake_controller: IntakeController | None = None
         self.message_parser = MessageParser()
-        self.lock_manager = LockManager()
+        self.lock_manager: LockManager | None = None
         self.context_dependencies: ContextDependencies | None = None
         self.context_factory: Callable[[Message], Context] | None = None
         self.message_service: MessageService | None = None
@@ -95,10 +101,34 @@ class Application:
         self.api_clients = self._create_api_clients(self.session)
 
         self.queue = asyncio.Queue(maxsize=self.settings.queue_size)
+        if self.settings.durable_queue_enabled:
+            self.persistent_queue = PersistentQueue(
+                storage=self.storage,
+                key=self.settings.ingest_queue_name,
+                max_length=self.settings.durable_queue_max_length,
+            )
+        self.ingest_checkpoint_store = IngestCheckpointStore(
+            storage=self.storage,
+            key=self.settings.ingest_checkpoint_key,
+            window_size=self.settings.ingest_checkpoint_window,
+        )
+        self.intake_controller = IntakeController(
+            default_pause_seconds=self.settings.ingest_pause_seconds
+        )
         self.websocket_client = WebSocketClient(
             signal_service_url=self.settings.signal_service,
             phone_number=self.settings.phone_number,
             websocket_path=self.settings.websocket_path,
+        )
+        redis_client = (
+            self.storage.client
+            if self.settings.distributed_locks_enabled
+            and isinstance(self.storage, RedisStorage)
+            else None
+        )
+        self.lock_manager = LockManager(
+            redis_client=redis_client,
+            lock_timeout_seconds=self.settings.distributed_lock_timeout,
         )
         self.dead_letter_queue = DeadLetterQueue(
             storage=self.storage,
@@ -128,6 +158,8 @@ class Application:
             websocket_client=self.websocket_client,
             queue=self.queue,
             dead_letter_queue=self.dead_letter_queue,
+            persistent_queue=self.persistent_queue,
+            intake_controller=self.intake_controller,
             enqueue_timeout=self.settings.queue_put_timeout,
             backpressure_policy=(
                 BackpressurePolicy.DROP_OLDEST
@@ -139,8 +171,24 @@ class Application:
             context_factory=self.context_factory,
             queue=self.queue,
             message_parser=self.message_parser,
+            dead_letter_queue=self.dead_letter_queue,
+            checkpoint_store=self.ingest_checkpoint_store,
             pool_size=self.settings.worker_pool_size,
         )
+        if self.persistent_queue:
+            replay = await self.persistent_queue.replay()
+            for item in replay:
+                queued = QueuedMessage(raw=item.raw, enqueued_at=item.enqueued_at)
+                try:
+                    self.queue.put_nowait(queued)
+                except asyncio.QueueFull:
+                    log.warning(
+                        "persistent_queue.replay_dropped",
+                        reason="queue_full",
+                        queue_depth=self.queue.qsize(),
+                        queue_maxsize=self.queue.maxsize,
+                    )
+                    break
 
     def _create_storage(self) -> Storage:
         if self.settings.storage_type.lower() == "redis":

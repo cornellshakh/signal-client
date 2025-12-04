@@ -67,7 +67,9 @@ Python framework for building Signal bots with async primitives, resilient messa
 - Types: `poetry run mypy src`
 - Tests: `poetry run pytest`
 - Docs: `poetry run mkdocs build`
-- (Optional) Enable project hooks: `git config core.hooksPath .githooks`
+- Pre-commit: set the hook once with either:
+  - `git config core.hooksPath .githooks` (uses the bundled hook that shells into `poetry run pre-commit`)
+  - or unset hooksPath and run `poetry run pre-commit install --install-hooks`
 
 ## Releasing
 

@@ -5,112 +5,72 @@ class SignalClientError(Exception):
     """Base exception for all signal-client errors."""
 
 
-class APIError(SignalClientError):
-    """Raised when the Signal API returns an error."""
+class SignalAPIError(Exception):
+    """
+    Base exception for all API-related errors.
 
-    def __init__(
-        self,
-        message: str = "API error",
-        status_code: int | None = None,
-        response_body: str | None = None,
-        docs_url: str | None = None,
-    ) -> None:
-        self.status_code = status_code
-        self.response_body = response_body
-        self.docs_url = docs_url
-        if status_code:
-            message = f"{message} (Status Code: {status_code})"
-        if response_body:
-            message = f"{message}\nResponse: {response_body}"
-        if docs_url:
-            message = f"{message}\n\nSee {docs_url} for more information."
+    This exception is raised for general API errors that do not fall into
+    more specific categories (e.g., unexpected status codes).
+    """
+
+    def __init__(self, message: str, status_code: int | None = None) -> None:
         super().__init__(message)
-
-    def __str__(self) -> str:
-        """Return a string representation of the error."""
-        message = super().__str__()
-        if self.status_code:
-            message = f"Status Code: {self.status_code}\n{message}"
-        return message
-
-    def to_dict(self) -> dict[str, str | int | None]:
-        """Return a dictionary representation of the error."""
-        return {
-            "message": self.args[0],
-            "status_code": self.status_code,
-            "response_body": self.response_body,
-            "docs_url": self.docs_url,
-        }
+        self.status_code = status_code
 
 
-class AuthenticationError(APIError):
-    """Raised for authentication errors (401)."""
+class RateLimitError(SignalAPIError):
+    """
+    Raised when the API rate limit is exceeded (HTTP status codes 413 or 429).
+    """
 
-    def __init__(
-        self,
-        message: str = "Authentication failed",
-        status_code: int | None = None,
-        response_body: str | None = None,
-        docs_url: str | None = None,
-    ) -> None:
-        super().__init__(message, status_code, response_body, docs_url)
+    def __init__(self, message: str, status_code: int | None = 429) -> None:
+        super().__init__(message, status_code)
 
 
-class NotFoundError(APIError):
-    """Raised when a resource is not found (404)."""
+class InvalidRecipientError(SignalAPIError):
+    """
+    Raised when a message cannot be sent due to an invalid recipient (HTTP status 404
+    on send operations).
+    """
 
-    def __init__(
-        self,
-        message: str = "Resource not found",
-        status_code: int | None = None,
-        response_body: str | None = None,
-        docs_url: str | None = None,
-    ) -> None:
-        super().__init__(message, status_code, response_body, docs_url)
+    def __init__(self, message: str, status_code: int | None = 404) -> None:
+        super().__init__(message, status_code)
 
 
-class ConflictError(APIError):
-    """Raised when there is a conflict (409)."""
+class GroupNotFoundError(SignalAPIError):
+    """
+    Raised when a requested group is not found (HTTP status 404 for group-related operations).
+    """
 
-    def __init__(
-        self,
-        message: str = "Conflict",
-        status_code: int | None = None,
-        response_body: str | None = None,
-        docs_url: str | None = None,
-    ) -> None:
-        super().__init__(message, status_code, response_body, docs_url)
+    def __init__(self, message: str, status_code: int | None = 404) -> None:
+        super().__init__(message, status_code)
 
 
-class RateLimitError(APIError):
-    """Raised when the API rate limit is exceeded (429)."""
+class AuthenticationError(SignalAPIError):
+    """
+    Raised for authentication failures (HTTP status code 401 Unauthorized).
+    """
 
-    def __init__(
-        self,
-        message: str = "Rate limit exceeded",
-        status_code: int | None = None,
-        response_body: str | None = None,
-        docs_url: str | None = None,
-    ) -> None:
-        super().__init__(message, status_code, response_body, docs_url)
+    def __init__(self, message: str, status_code: int | None = 401) -> None:
+        super().__init__(message, status_code)
 
 
-class ServerError(APIError):
-    """Raised for server-side errors (5xx)."""
+class ServerError(SignalAPIError):
+    """
+    Raised for server-side errors (HTTP status codes 5xx).
+    """
 
-    def __init__(
-        self,
-        message: str = "Server error",
-        status_code: int | None = None,
-        response_body: str | None = None,
-        docs_url: str | None = None,
-    ) -> None:
-        super().__init__(message, status_code, response_body, docs_url)
+    def __init__(self, message: str, status_code: int | None = 500) -> None:
+        super().__init__(message, status_code)
 
 
 class UnsupportedMessageError(SignalClientError):
-    """Custom exception for unsupported message types."""
+    """
+    Custom exception for unsupported message types encountered during processing.
+    """
 
 
 class ConfigurationError(Exception):
-    """Raised when there is a configuration error."""
+    """
+    Raised when there is an issue with the application's configuration.
+    """

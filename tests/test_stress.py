@@ -1,3 +1,5 @@
+"""Opt-in stress benchmark; set RUN_PERFORMANCE_TESTS=1 and run with `pytest -m performance`."""
+
 import asyncio
 import json
 import os
@@ -25,6 +27,10 @@ pytestmark = [
     pytest.mark.skipif(
         bool(os.environ.get("CI")),
         reason="Stress benchmark is disabled on CI runners.",
+    ),
+    pytest.mark.skipif(
+        not bool(os.environ.get("RUN_PERFORMANCE_TESTS")),
+        reason="Stress benchmark is opt-in; set RUN_PERFORMANCE_TESTS=1 to enable.",
     ),
 ]
 

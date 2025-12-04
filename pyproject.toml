@@ -28,7 +28,7 @@ packages = [{include = "signal_client", from = "src"}]
 "Documentation" = "https://github.com/cornellsh/signal_client#readme"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.10,<3.14"
 APScheduler = ">=3.11.0,<4.0.0"
 aiohttp = ">=3.11.9,<4.0.0"
 websockets = ">=14.1,<15.0"
@@ -58,6 +58,9 @@ pytest-xdist = "^3.8.0"
 pytest-timeout = "^2.4.0"
 python-semantic-release = "<9"
 tqdm = "^4.67.1"
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.7.0"
+mkdocstrings = "^1.0.0"
 
 [tool.poetry.scripts]
 audit-api = "scripts.audit_api:main"
@@ -72,7 +75,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  "D",   # Docstrings
   "FIX", # TODO, FIXME and other messages
   "ERA001", # Commented out code
   "COM812", # Trailing commas, the formatter already does this

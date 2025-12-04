@@ -70,20 +70,20 @@ class WebSocketClient:
             except ConnectionClosed:
                 self._mark_disconnected(reason="closed")
                 log.warning(
-                    "websocket.closed_reconnecting",
+                    "websocket.closed_reconnecting: Websocket closed, reconnecting...",
                     delay=self._reconnect_delay,
                 )
             except (OSError, InvalidURI, InvalidHandshake, asyncio.TimeoutError) as exc:
                 self._mark_disconnected(reason="connection_error")
                 log.warning(
-                    "websocket.connection_error",
+                    "websocket.connection_error: Websocket connection error",
                     error=str(exc),
                     delay=self._reconnect_delay,
                 )
             except Exception:
                 self._mark_disconnected(reason="unexpected_error")
                 log.exception(
-                    "websocket.unexpected_error_reconnecting",
+                    "websocket.unexpected_error_reconnecting: Unexpected websocket error, reconnecting...",
                     delay=self._reconnect_delay,
                 )
 

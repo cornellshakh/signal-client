@@ -1,4 +1,4 @@
-"""Opt-in performance benchmarks; run with `pytest -m performance`."""
+"""Opt-in performance benchmarks; set RUN_PERFORMANCE_TESTS=1 and run with `pytest -m performance`."""
 
 import asyncio
 import json
@@ -19,6 +19,10 @@ pytestmark = [
     pytest.mark.skipif(
         bool(os.environ.get("CI")),
         reason="Performance benchmark is disabled on CI runners.",
+    ),
+    pytest.mark.skipif(
+        not bool(os.environ.get("RUN_PERFORMANCE_TESTS")),
+        reason="Performance benchmark is opt-in; set RUN_PERFORMANCE_TESTS=1 to enable.",
     ),
 ]
 

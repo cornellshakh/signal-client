@@ -158,3 +158,8 @@ signal-cli-config/
 # Example for Sphinx or MkDocs. Adjust if you use a different tool.
 site/
 _build/
+
+# Repo management files
+openspec/
+AGENTS.md
+CODEX_PROMPT.md

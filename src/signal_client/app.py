@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
@@ -29,6 +30,7 @@ from .infrastructure.api_clients import (
 from .infrastructure.api_clients.base_client import ClientConfig, HeaderProvider
 from .infrastructure.schemas.message import Message
 from .infrastructure.websocket_client import WebSocketClient
+from .observability.logging import ensure_structlog_configured
 from .runtime.listener import BackpressurePolicy, MessageService
 from .runtime.models import QueuedMessage
 from .runtime.worker_pool import WorkerPool
@@ -41,6 +43,7 @@ from .services.message_parser import MessageParser
 from .services.persistent_queue import PersistentQueue
 from .services.rate_limiter import RateLimiter
 from .storage.base import Storage
+from .storage.memory import MemoryStorage
 from .storage.redis import RedisStorage
 from .storage.sqlite import SQLiteStorage
 
@@ -49,6 +52,25 @@ log = structlog.get_logger()
 
 @dataclass
 class APIClients:
+    """
+    A container for all the API clients.
+
+    Attributes:
+        accounts: Client for accounts API.
+        attachments: Client for attachments API.
+        contacts: Client for contacts API.
+        devices: Client for devices API.
+        general: Client for general API.
+        groups: Client for groups API.
+        identities: Client for identities API.
+        messages: Client for messages API.
+        profiles: Client for profiles API.
+        reactions: Client for reactions API.
+        receipts: Client for receipts API.
+        search: Client for search API.
+        sticker_packs: Client for sticker packs API.
+    """
+
     accounts: AccountsClient
     attachments: AttachmentsClient
     contacts: ContactsClient
@@ -65,11 +87,27 @@ class APIClients:
 
 
 class Application:
-    """Explicit wiring of Signal client runtime components."""
+    """
+    Explicit wiring of Signal client runtime components.
+
+    This class is responsible for initializing and managing the lifecycle
+    of all components within the Signal client, including API clients,
+    storage, message queues, and worker pools.
+    """
 
     def __init__(
         self, settings: Settings, *, header_provider: HeaderProvider | None = None
     ) -> None:
+        """
+        Initialize the Application instance.
+
+        Args:
+            settings: The application settings.
+            header_provider: An optional callable or object that provides
+                             additional HTTP headers for API requests.
+        """
+        ensure_structlog_configured(redaction_enabled=settings.log_redaction_enabled)
+        self._log = structlog.get_logger()
         self.settings = settings
         self._header_provider = header_provider
         self.session: aiohttp.ClientSession | None = None
@@ -84,6 +122,12 @@ class Application:
         )
 
         self.storage = self._create_storage()
+        if isinstance(self.storage, MemoryStorage):
+            self._log_warning(
+                "Using transient in-memory storage. No data will be persisted.",
+                event_slug="storage.in_memory.active",
+            )
+
         self.api_clients: APIClients | None = None
 
         self.queue: asyncio.Queue[QueuedMessage] | None = None
@@ -101,7 +145,26 @@ class Application:
         self._circuit_state_lock: asyncio.Lock | None = None
         self._open_circuit_endpoints: set[str] = set()
 
+    def _log_warning(self, message: str, **kwargs: object) -> None:
+        """
+        Emit a warning, tolerating minimal structlog configurations.
+
+        Falls back to stdlib logging if the current structlog logger does not
+        accept keyword arguments (e.g., when using PrintLogger).
+        """
+        try:
+            self._log.warning(message, **kwargs)
+        except TypeError:
+            logging.getLogger(__name__).warning(message)
+
     async def initialize(self) -> None:
+        """
+        Initialize all components of the application.
+
+        This method sets up the AIOHTTP client session, API clients,
+        message queues, storage, and worker pools. It must be called
+        before the application can start processing messages.
+        """
         if self.queue is not None:
             return
 
@@ -197,7 +260,7 @@ class Application:
                 try:
                     self.queue.put_nowait(queued)
                 except asyncio.QueueFull:
-                    log.warning(
+                    self._log_warning(
                         "persistent_queue.replay_dropped",
                         reason="queue_full",
                         queue_depth=self.queue.qsize(),
@@ -206,14 +269,33 @@ class Application:
                     break
 
     def _create_storage(self) -> Storage:
-        if self.settings.storage_type.lower() == "redis":
+        """
+        Create and return the appropriate storage backend based on settings.
+
+        Returns:
+            An instance of a concrete Storage implementation (RedisStorage,
+            SQLiteStorage, or MemoryStorage).
+        """
+        storage_type = self.settings.storage_type.lower()
+        if storage_type == "redis":
             return RedisStorage(
                 host=self.settings.redis_host,
                 port=self.settings.redis_port,
             )
-        return SQLiteStorage(database=self.settings.sqlite_database)
+        if storage_type == "sqlite":
+            return SQLiteStorage(database=self.settings.sqlite_database)
+        return MemoryStorage()
 
     def _create_api_clients(self, session: aiohttp.ClientSession) -> APIClients:
+        """
+        Create and return a collection of API clients.
+
+        Args:
+            session: The aiohttp client session to use for requests.
+
+        Returns:
+            An APIClients instance containing all initialized API clients.
+        """
         client_config = ClientConfig(
             session=session,
             base_url=self.settings.base_url,
@@ -244,6 +326,14 @@ class Application:
         )
 
     def _default_api_headers(self) -> dict[str, str]:
+        """
+        Construct a dictionary of default headers for API requests.
+
+        Includes authorization header if an API token is configured.
+
+        Returns:
+            A dictionary of HTTP headers.
+        """
         headers = dict(self.settings.api_default_headers)
         token = (self.settings.api_auth_token or "").strip()
         if token:
@@ -253,6 +343,7 @@ class Application:
         return headers
 
     async def shutdown(self) -> None:
+        """Shut down the application gracefully."""
         if self.websocket_client is not None:
             await self.websocket_client.close()
         if self.session is not None:
@@ -264,6 +355,16 @@ class Application:
     async def _handle_circuit_state_change(
         self, endpoint: str, state: CircuitBreakerState
     ) -> None:
+        """
+        Handle changes in the circuit breaker state for a given endpoint.
+
+        If a circuit opens, the intake controller may be paused. If all
+        circuits close, the intake controller may be resumed.
+
+        Args:
+            endpoint: The API endpoint whose circuit breaker state changed.
+            state: The new state of the circuit breaker.
+        """
         if self.intake_controller is None or self._circuit_state_lock is None:
             return
 
@@ -291,6 +392,12 @@ class Application:
             await self.intake_controller.resume_now()
 
     async def _handle_rate_limit_wait(self, wait_time: float) -> None:
+        """
+        Handle a rate limit wait by pausing the intake controller.
+
+        Args:
+            wait_time: The duration (in seconds) to wait due to rate limiting.
+        """
         if self.intake_controller is None:
             return
 

@@ -122,7 +122,11 @@ def test_signal_client_respects_existing_structlog_configuration() -> None:
     structlog.reset_defaults()
     bot_module.reset_structlog_configuration_for_tests()
 
-    original_processors = [structlog.processors.TimeStamper(fmt="iso")]
+    original_processors = [
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.stdlib.render_to_log_kwargs,
+    ]
     structlog.configure(processors=original_processors)
 
     client = SignalClient()

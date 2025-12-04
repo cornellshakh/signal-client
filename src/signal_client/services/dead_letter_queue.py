@@ -88,13 +88,18 @@ class DeadLetterQueue:
         )
         await self._storage.append(self._queue_name, entry.to_record())
         log.debug(
-            "dlq.message_enqueued",
+            "DLQ message enqueued",
+            event_slug="dlq.message_enqueued",
             queue=self._queue_name,
             retry_count=retry_count,
             next_retry_at=scheduled_for,
         )
         DLQ_EVENTS.labels(queue=self._queue_name, event="enqueued").inc()
         await self._update_backlog_metric()
+
+    async def inspect(self) -> list[dict[str, Any]]:
+        """Return all DLQ entries without mutating the queue."""
+        return await self._storage.read_all(self._queue_name)
 
     async def replay(self) -> list[dict[str, Any]]:
         messages = await self._storage.read_all(self._queue_name)
@@ -112,7 +117,8 @@ class DeadLetterQueue:
             if entry.retry_count >= self._max_retries:
                 DLQ_EVENTS.labels(queue=self._queue_name, event="discarded").inc()
                 log.warning(
-                    "dlq.message_discarded",
+                    "DLQ message discarded due to retry limit",
+                    event_slug="dlq.message_discarded",
                     queue=self._queue_name,
                     retry_count=entry.retry_count,
                 )
@@ -133,7 +139,8 @@ class DeadLetterQueue:
         for msg in messages_to_keep:
             await self._storage.append(self._queue_name, msg)
             log.debug(
-                "dlq.message_pending",
+                "DLQ message pending",
+                event_slug="dlq.message_pending",
                 queue=self._queue_name,
                 retry_count=msg.get("retry_count", 0),
                 available_in=max(
@@ -147,18 +154,16 @@ class DeadLetterQueue:
 
         if ready_messages:
             log.info(
-                "dlq.messages_ready",
+                "DLQ messages ready for replay",
+                event_slug="dlq.messages_ready",
                 queue=self._queue_name,
                 count=len(ready_messages),
             )
-            DLQ_EVENTS.labels(queue=self._queue_name, event="ready").inc(
-                len(ready_messages)
-            )
+        DLQ_EVENTS.labels(queue=self._queue_name, event="ready").inc(
+            len(ready_messages)
+        )
 
         return ready_messages
-
-    async def inspect(self) -> list[dict[str, Any]]:
-        return await self._storage.read_all(self._queue_name)
 
     async def _update_backlog_metric(self, count: int | None = None) -> None:
         if count is None:

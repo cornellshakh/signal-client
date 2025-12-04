@@ -12,6 +12,7 @@ from signal_client.bot import SignalClient
 from signal_client.command import Command, command
 from signal_client.context import Context
 from signal_client.context_deps import ContextDependencies
+from signal_client.exceptions import RateLimitError
 from signal_client.infrastructure.schemas.message import Message
 from signal_client.observability.metrics import (
     COMMAND_LATENCY,
@@ -316,6 +317,59 @@ async def test_worker_pool_handles_regex_triggers(
     await manager.join()
 
     regex_handler.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_worker_handles_api_errors_with_specific_reason(
+    bot: SignalClient, make_raw_message
+) -> None:
+    await bot.app.initialize()
+    context_dependencies = bot.app.context_dependencies
+    assert context_dependencies is not None
+
+    router = CommandRouter()
+    failing_command = Command(triggers=["!fail"])
+    failing_command.handle = AsyncMock(
+        side_effect=RateLimitError("hit limit", status_code=429)
+    )
+    router.register(failing_command)
+
+    queue: asyncio.Queue[QueuedMessage] = asyncio.Queue()
+    message_parser = MessageParser()
+
+    def context_factory(message: Message) -> Context:
+        return Context(message=message, dependencies=context_dependencies)
+
+    worker_config = WorkerConfig(
+        context_factory=context_factory,
+        queue=queue,
+        message_parser=message_parser,
+        router=router,
+        middleware=[],
+    )
+    worker = Worker(
+        worker_config,
+        worker_id=2,
+        shard_id=1,
+    )
+    worker._send_to_dlq = AsyncMock()  # type: ignore[assignment]
+
+    raw_message = make_raw_message("!fail")
+    message = message_parser.parse(raw_message)
+    queued_message = QueuedMessage(
+        raw=raw_message,
+        enqueued_at=time.perf_counter(),
+        message=message,
+    )
+
+    await worker.process(message, queued_message=queued_message)
+
+    worker._send_to_dlq.assert_awaited_once()
+    call_kwargs = worker._send_to_dlq.await_args.kwargs
+    assert call_kwargs["reason"] == "rate_limited"
+    metadata = call_kwargs["metadata"]
+    assert metadata["status_code"] == 429
+    assert metadata["error_type"] == "RateLimitError"
 
 
 @pytest.mark.asyncio

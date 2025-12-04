@@ -4,11 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import re
-
     from .config import Settings
-
-if TYPE_CHECKING:
     from .infrastructure.api_clients import (
         AccountsClient,
         AttachmentsClient,
@@ -29,8 +25,9 @@ if TYPE_CHECKING:
 
 @dataclass
 class ContextDependencies:
-    """Dependencies for the Context class."""
-
+    """
+    Holds all the external dependencies required by the `Context` object.
+    """
     accounts_client: AccountsClient
     attachments_client: AttachmentsClient
     contacts_client: ContactsClient

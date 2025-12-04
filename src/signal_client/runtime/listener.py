@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from enum import Enum
 
@@ -45,6 +46,7 @@ class MessageService:
         self._intake_controller = intake_controller
         self._enqueue_timeout = max(0.0, enqueue_timeout)
         self._backpressure_policy = backpressure_policy
+        self._logger = structlog.get_logger()
 
     def set_websocket_client(self, websocket_client: WebSocketClient) -> None:
         """Swap websocket client (primarily for tests)."""
@@ -72,7 +74,7 @@ class MessageService:
                 self._update_queue_depth_metric()
                 continue
 
-            log.warning(
+            self._warn(
                 "message_service.queue_full",
                 queue_depth=self._queue.qsize(),
                 queue_maxsize=self._queue.maxsize,
@@ -106,7 +108,7 @@ class MessageService:
             return False
 
         self._queue.task_done()
-        log.warning(
+        self._warn(
             "message_service.dropped_oldest",
             queue_depth=self._queue.qsize(),
             queue_maxsize=self._queue.maxsize,
@@ -120,7 +122,7 @@ class MessageService:
             )
         except asyncio.TimeoutError:
             self._update_queue_depth_metric()
-            log.warning(
+            self._warn(
                 "message_service.queue_full_after_drop",
                 queue_depth=self._queue.qsize(),
                 queue_maxsize=self._queue.maxsize,
@@ -139,6 +141,13 @@ class MessageService:
 
     def _update_queue_depth_metric(self) -> None:
         MESSAGE_QUEUE_DEPTH.set(self._queue.qsize())
+
+    def _warn(self, event: str, **kwargs: object) -> None:
+        """Emit warnings defensively in case structlog is minimally configured."""
+        try:
+            self._logger.warning(event, **kwargs)
+        except TypeError:
+            logging.getLogger(__name__).warning("%s %s", event, kwargs)
 
 
 __all__ = ["BackpressurePolicy", "MessageService"]

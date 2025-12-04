@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import uuid
 from typing import Any
 
 import structlog
@@ -80,7 +82,12 @@ class MessageParser:
         try:
             return json.loads(raw_message_str)
         except json.JSONDecodeError as exc:
-            log.warning("message_parser.json_decode_failed", error=str(exc))
+            try:
+                log.warning("message_parser.json_decode_failed", error=str(exc))
+            except TypeError:
+                logging.getLogger(__name__).warning(
+                    "message_parser.json_decode_failed: %s", str(exc)
+                )
             return None
 
     @staticmethod

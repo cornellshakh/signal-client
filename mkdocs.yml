@@ -1,0 +1,12 @@
+site_name: signal-client
+theme:
+  name: material
+repo_url: https://github.com/cornellsh/signal-client
+plugins:
+  - search
+  - mkdocstrings
+nav:
+  - Home: index.md
+  - Guides:
+    - Production Deployment: guides/production_deployment.md
+    - Advanced Usage: guides/advanced_usage.md

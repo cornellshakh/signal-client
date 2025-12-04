@@ -30,11 +30,28 @@ if TYPE_CHECKING:
 
 
 class Context:
+    """
+    Provides a rich interface for command handlers to interact with the
+    Signal API, send responses, and access message-related functionality.
+
+    Instances of this class are passed to command handler functions,
+    encapsulating the incoming message and all necessary API clients
+    and utilities.
+    """
+
     def __init__(
         self,
         message: Message,
         dependencies: ContextDependencies,
     ) -> None:
+        """
+        Initialize a Context instance.
+
+        Args:
+            message: The incoming message that triggered the command.
+            dependencies: An instance of ContextDependencies providing
+                          access to various clients and managers.
+        """
         self.message = message
         self.accounts = dependencies.accounts_client
         self.attachments = dependencies.attachments_client
@@ -55,7 +72,15 @@ class Context:
         self._attachment_downloader = AttachmentDownloader(self.attachments)
 
     async def send(self, request: SendMessageRequest) -> SendMessageResponse | None:
-        """Send a message to a recipient."""
+        """
+        Send a message to a recipient.
+
+        Args:
+            request: The SendMessageRequest object containing message details.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         normalized = self._prepare_send_request(request)
         request_options = (
             RequestOptions(idempotency_key=normalized.idempotency_key)
@@ -69,7 +94,18 @@ class Context:
         return SendMessageResponse.from_raw(response)
 
     async def reply(self, request: SendMessageRequest) -> SendMessageResponse | None:
-        """Reply to the incoming message, quoting it."""
+        """
+        Reply to the incoming message, quoting it.
+
+        The original message's author, content, and timestamp are
+        automatically included in the quote.
+
+        Args:
+            request: The SendMessageRequest object containing message details.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         request.quote_author = self.message.source
         request.quote_message = self.message.message
         request.quote_timestamp = self.message.timestamp
@@ -90,6 +126,26 @@ class Context:
         sticker: str | None = None,
         view_once: bool = False,
     ) -> SendMessageResponse | None:
+        """
+        Send a plain text message.
+
+        Args:
+            text: The text content of the message.
+            recipients: Optional list of recipient IDs (phone numbers or group IDs).
+                        Defaults to the sender of the incoming message.
+            mentions: Optional list of MessageMention objects for @mentions.
+            quote_mentions: Optional list of MessageMention objects for mentions within a quote.
+            base64_attachments: Optional list of base64 encoded attachments.
+            link_preview: Optional LinkPreview object for a URL preview.
+            text_mode: 'normal' for plain text, 'styled' for markdown.
+            notify_self: Whether to send a notification to self.
+            edit_timestamp: Timestamp of the message to edit.
+            sticker: ID of a sticker to send.
+            view_once: If True, the message/attachments can only be viewed once.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         request = SendMessageRequest(
             message=text,
             recipients=list(recipients) if recipients else None,
@@ -120,6 +176,26 @@ class Context:
         sticker: str | None = None,
         view_once: bool = False,
     ) -> SendMessageResponse | None:
+        """
+        Reply to the incoming message with plain text, quoting it.
+
+        Args:
+            text: The text content of the reply message.
+            recipients: Optional list of recipient IDs (phone numbers or group IDs).
+                        Defaults to the sender of the incoming message.
+            mentions: Optional list of MessageMention objects for @mentions.
+            quote_mentions: Optional list of MessageMention objects for mentions within a quote.
+            base64_attachments: Optional list of base64 encoded attachments.
+            link_preview: Optional LinkPreview object for a URL preview.
+            text_mode: 'normal' for plain text, 'styled' for markdown.
+            notify_self: Whether to send a notification to self.
+            edit_timestamp: Timestamp of the message to edit.
+            sticker: ID of a sticker to send.
+            view_once: If True, the message/attachments can only be viewed once.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         request = SendMessageRequest(
             message=text,
             recipients=list(recipients) if recipients else None,
@@ -142,6 +218,17 @@ class Context:
         recipients: Sequence[str] | None = None,
         mentions: list[MessageMention] | None = None,
     ) -> SendMessageResponse | None:
+        """
+        Send a message with markdown formatting.
+
+        Args:
+            text: The markdown formatted text content of the message.
+            recipients: Optional list of recipient IDs.
+            mentions: Optional list of MessageMention objects for @mentions.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         return await self.send_text(
             text,
             recipients=recipients,
@@ -158,6 +245,19 @@ class Context:
         recipients: Sequence[str] | None = None,
         notify_self: bool | None = None,
     ) -> SendMessageResponse | None:
+        """
+        Send a sticker message.
+
+        Args:
+            pack_id: The ID of the sticker pack.
+            sticker_id: The ID of the sticker within the pack.
+            caption: Optional caption for the sticker.
+            recipients: Optional list of recipient IDs.
+            notify_self: Whether to send a notification to self.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         sticker_ref = f"{pack_id}:{sticker_id}"
         return await self.send_text(
             caption or "",
@@ -174,6 +274,18 @@ class Context:
         recipients: Sequence[str] | None = None,
         notify_self: bool | None = None,
     ) -> SendMessageResponse | None:
+        """
+        Send a view-once message with attachments.
+
+        Args:
+            attachments: List of base64 encoded attachments.
+            message: Optional text message to accompany the view-once attachments.
+            recipients: Optional list of recipient IDs.
+            notify_self: Whether to send a notification to self.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         return await self.send_text(
             message,
             recipients=recipients,
@@ -192,6 +304,20 @@ class Context:
         recipients: Sequence[str] | None = None,
         text_mode: Literal["normal", "styled"] | None = None,
     ) -> SendMessageResponse | None:
+        """
+        Send a message with a link preview.
+
+        Args:
+            url: The URL for which to generate a preview.
+            message: Optional text message to accompany the link preview.
+            title: Optional title for the link preview.
+            description: Optional description for the link preview.
+            recipients: Optional list of recipient IDs.
+            text_mode: 'normal' for plain text, 'styled' for markdown.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         preview = LinkPreview(
             url=url,
             title=title,
@@ -212,7 +338,24 @@ class Context:
         max_total_bytes: int = DEFAULT_MAX_TOTAL_BYTES,
         dest_dir: str | Path | None = None,
     ) -> AsyncGenerator[list[Path], None]:
-        """Download attachments for the current message (or provided list)."""
+        """
+        Download attachments associated with the current message or a provided list.
+
+        This is an asynchronous context manager that yields a list of `Path`
+        objects pointing to the downloaded files. The files are cleaned up
+        automatically upon exiting the context.
+
+        Args:
+            attachments: An optional sequence of `AttachmentPointer` objects to download.
+                         If not provided, attachments from `self.message` are used.
+            max_total_bytes: The maximum total size (in bytes) of attachments to download.
+                             Defaults to `DEFAULT_MAX_TOTAL_BYTES`.
+            dest_dir: Optional directory to save the attachments. If not provided,
+                      a temporary directory is used.
+
+        Yields:
+            A list of `pathlib.Path` objects to the downloaded attachment files.
+        """
         pointers: list[AttachmentPointer] = []
         if attachments is not None:
             pointers = list(attachments)
@@ -230,6 +373,20 @@ class Context:
             yield files
 
     def mention_author(self, text: str, mention_text: str | None = None) -> MessageMention:
+        """
+        Create a MessageMention object for the author of the current message.
+
+        Args:
+            text: The full text content where the mention is located.
+            mention_text: The specific text used for the mention (e.g., "@Alice").
+                          If None, defaults to `self.message.source`.
+
+        Returns:
+            A `MessageMention` object suitable for use in `SendMessageRequest`.
+
+        Raises:
+            ValueError: If the `mention_text` is not found within the provided `text`.
+        """
         mention_value = mention_text or self.message.source
         start = text.find(mention_value)
         if start < 0:
@@ -242,6 +399,17 @@ class Context:
         text: str,
         mentions: list[MessageMention] | None = None,
     ) -> SendMessageResponse | None:
+        """
+        Reply to the incoming message with text, automatically quoting it
+        and attempting to mention the author of the original message.
+
+        Args:
+            text: The text content of the reply message.
+            mentions: Optional list of additional MessageMention objects for @mentions.
+
+        Returns:
+            A SendMessageResponse object if successful, otherwise None.
+        """
         quote_mentions = mentions
         if quote_mentions is None and self.message.message:
             try:
@@ -255,7 +423,12 @@ class Context:
         )
 
     async def react(self, emoji: str) -> None:
-        """Add a reaction to the incoming message."""
+        """
+        Add a reaction (emoji) to the incoming message.
+
+        Args:
+            emoji: The emoji string to react with (e.g., "👍").
+        """
         request = ReactionRequest(
             reaction=emoji,
             target_author=self.message.source,
@@ -268,7 +441,12 @@ class Context:
         )
 
     async def remove_reaction(self) -> None:
-        """Remove a reaction from the incoming message."""
+        """
+        Remove a reaction from the incoming message.
+
+        This method will only attempt to remove a reaction if `self.message.reaction_emoji`
+        is set, indicating a reaction was present on the original message.
+        """
         if not self.message.reaction_emoji:
             return
 
@@ -284,14 +462,18 @@ class Context:
         )
 
     async def show_typing(self) -> None:
-        """Show the typing indicator."""
+        """
+        Send a typing indicator to the sender of the incoming message.
+        """
         request = TypingIndicatorRequest(recipient=self._recipient())
         await self.messages.set_typing_indicator(
             self._phone_number, request.model_dump(exclude_none=True, by_alias=True)
         )
 
     async def hide_typing(self) -> None:
-        """Hide the typing indicator."""
+        """
+        Hide the typing indicator from the sender of the incoming message.
+        """
         request = TypingIndicatorRequest(recipient=self._recipient())
         await self.messages.unset_typing_indicator(
             self._phone_number, request.model_dump(exclude_none=True, by_alias=True)
@@ -312,6 +494,14 @@ class Context:
         receipt_type: Literal["read", "viewed"] = "read",
         recipient: str | None = None,
     ) -> None:
+        """
+        Send a read or viewed receipt for a message.
+
+        Args:
+            target_timestamp: The timestamp of the message for which to send the receipt.
+            receipt_type: The type of receipt to send ('read' or 'viewed'). Defaults to 'read'.
+            recipient: Optional recipient ID. Defaults to the sender of the incoming message.
+        """
         payload = ReceiptRequest(
             recipient=recipient or self._recipient(),
             timestamp=target_timestamp,
@@ -329,6 +519,17 @@ class Context:
         recipient: str | None = None,
         idempotency_key: str | None = None,
     ) -> RemoteDeleteResponse | None:
+        """
+        Remotely delete a message.
+
+        Args:
+            target_timestamp: The timestamp of the message to delete.
+            recipient: Optional recipient ID. Defaults to the sender of the incoming message.
+            idempotency_key: An optional idempotency key for the request.
+
+        Returns:
+            A RemoteDeleteResponse object if successful, otherwise None.
+        """
         request = RemoteDeleteRequest(
             recipient=recipient or self._recipient(),
             timestamp=target_timestamp,
@@ -348,12 +549,31 @@ class Context:
 
     @asynccontextmanager
     async def lock(self, resource_id: str) -> AsyncGenerator[None, None]:
-        """Acquire a lock for a specific resource."""
+        """
+        Acquire a distributed lock for a specific resource.
+
+        This is an asynchronous context manager that ensures exclusive access
+        to a resource across multiple instances of the application.
+
+        Args:
+            resource_id: A unique identifier for the resource to lock.
+
+        Yields:
+            None, while the lock is held.
+        """
         async with self._lock_manager.lock(resource_id):
             yield
 
     def _prepare_send_request(self, request: SendMessageRequest) -> SendMessageRequest:
-        """Backfill recipients/number so callers never have to."""
+        """
+        Prepare a SendMessageRequest by backfilling recipient and sender number.
+
+        Args:
+            request: The SendMessageRequest to prepare.
+
+        Returns:
+            The prepared SendMessageRequest.
+        """
         if not request.recipients:
             request.recipients = [self._recipient()]
         if request.number is None:
@@ -361,6 +581,16 @@ class Context:
         return request
 
     def _recipient(self) -> str:
+        """
+        Determine the default recipient for a message based on the incoming message.
+
+        If the incoming message is from a group, the group ID is returned.
+        Otherwise, the sender's source ID is returned.
+
+        Returns:
+            The recipient ID (phone number or group ID).
+        """
         if self.message.is_group() and self.message.group:
             return self.message.group["groupId"]
         return self.message.source
+

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import aiohttp
 import pytest
 
-from signal_client.exceptions import APIError, ConflictError, NotFoundError
+from signal_client.exceptions import InvalidRecipientError, SignalAPIError
 from signal_client.infrastructure.api_clients.base_client import (
     BaseClient,
     ClientConfig,
@@ -31,7 +31,7 @@ async def test_handle_response_uses_error_code_mapping() -> None:
         }
     )
 
-    with pytest.raises(ConflictError) as exc_info:
+    with pytest.raises(SignalAPIError) as exc_info:
         await client._handle_response(response)
 
     assert exc_info.value.status_code == 409
@@ -46,21 +46,21 @@ async def test_handle_response_falls_back_to_status_code() -> None:
     response.content_type = "application/json"
     response.json = AsyncMock(return_value={"code": "UNKNOWN", "error": "Missing"})
 
-    with pytest.raises(NotFoundError) as exc:
+    with pytest.raises(InvalidRecipientError) as exc:
         await client._handle_response(response)
 
     assert exc.value.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_handle_response_raises_api_error_for_unmapped() -> None:
+async def test_handle_response_raises_signal_api_error_for_unmapped() -> None:
     client = _make_base_client()
     response = MagicMock(spec=aiohttp.ClientResponse)
     response.status = 400
     response.content_type = "application/json"
     response.json = AsyncMock(return_value={"error": "Bad request"})
 
-    with pytest.raises(APIError) as exc:
+    with pytest.raises(SignalAPIError) as exc:
         await client._handle_response(response)
 
     assert exc.value.status_code == 400

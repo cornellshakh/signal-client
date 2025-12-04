@@ -6,13 +6,22 @@ import math
 import time
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
+import logging
 from zlib import crc32
 
 import structlog
 
 from signal_client.command import Command, CommandError
 from signal_client.context import Context
-from signal_client.exceptions import UnsupportedMessageError
+from signal_client.exceptions import (
+    AuthenticationError,
+    GroupNotFoundError,
+    InvalidRecipientError,
+    RateLimitError,
+    ServerError,
+    SignalAPIError,
+    UnsupportedMessageError,
+)
 from signal_client.infrastructure.schemas.message import Message
 from signal_client.observability.metrics import (
     COMMAND_LATENCY,
@@ -45,8 +54,8 @@ class WorkerConfig:
     message_parser: MessageParser
     router: CommandRouter
     middleware: Iterable[MiddlewareCallable]
-    dead_letter_queue: DeadLetterQueue | None
-    checkpoint_store: IngestCheckpointStore | None
+    dead_letter_queue: DeadLetterQueue | None = None
+    checkpoint_store: IngestCheckpointStore | None = None
     lock_manager: LockManager | None = None
     queue_depth_getter: Callable[[], int] | None = None
 
@@ -101,11 +110,13 @@ class Worker:
                         await self.process(message, latency, queued_message=queued_message)
                         MESSAGES_PROCESSED.inc()
                 except UnsupportedMessageError as error:
-                    log.debug("worker.unsupported_message", error=error)
+                    log.debug(
+                        "worker.unsupported_message: Unsupported message", error=error
+                    )
                     ERRORS_OCCURRED.inc()
                 except (json.JSONDecodeError, KeyError):
                     log.exception(
-                        "worker.message_parse_failed",
+                        "worker.message_parse_failed: Failed to parse message",
                         raw_message=queued_message.raw,
                         worker_id=self._worker_id,
                     )
@@ -145,7 +156,7 @@ class Worker:
         )
         if await self._is_duplicate(message):
             log.debug(
-                "worker.duplicate_suppressed",
+                "worker.duplicate_suppressed: Duplicate message suppressed",
                 message_id=str(message.id),
                 source=message.source,
                 timestamp=message.timestamp,
@@ -181,7 +192,7 @@ class Worker:
         text = context.message.message
         if not isinstance(text, str) or not text:
             log.debug(
-                "worker.message_no_text",
+                "worker.message_no_text: Message has no text",
                 message_id=str(message.id),
                 recipient=recipient,
                 source=message.source,
@@ -192,7 +203,7 @@ class Worker:
         command, trigger = self._router.match(text)
         if command is None:
             log.debug(
-                "worker.command_not_found",
+                "worker.command_not_found: Command not found",
                 trigger=trigger,
                 message_id=str(message.id),
                 recipient=recipient,
@@ -201,7 +212,7 @@ class Worker:
             return
         if not self._is_whitelisted(command, context):
             log.debug(
-                "worker.command_not_whitelisted",
+                "worker.command_not_whitelisted: Command not whitelisted",
                 command=command.__class__.__name__,
                 recipient=recipient,
                 message_id=str(message.id),
@@ -222,10 +233,20 @@ class Worker:
             )
             await self._execute_with_middleware(command, context)
             await self._mark_checkpoint(message, queued_message)
+        except SignalAPIError as error:
+            status = "failure"
+            await self._handle_api_exception(
+                error=error,
+                handler_name=handler_name,
+                trigger=trigger,
+                message=message,
+                recipient=recipient,
+                queued_message=queued_message,
+            )
         except Exception:
             status = "failure"
             log.exception(
-                "worker.command_failed",
+                "worker.command_failed: Command failed",
                 command_name=handler_name,
                 trigger=trigger,
                 worker_id=self._worker_id,
@@ -236,16 +257,12 @@ class Worker:
             await self._send_to_dlq(
                 reason="command_failed",
                 raw=queued_message.raw if queued_message else None,
-                metadata={
-                    "command": handler_name,
-                    "trigger": trigger,
-                    "worker_id": self._worker_id,
-                    "shard_id": self._shard_id,
-                    "message_id": str(message.id),
-                    "source": message.source,
-                    "recipient": recipient,
-                    "timestamp": message.timestamp,
-                },
+                metadata=self._build_dlq_metadata(
+                    handler_name=handler_name,
+                    trigger=trigger,
+                    message=message,
+                    recipient=recipient,
+                ),
             )
             ERRORS_OCCURRED.inc()
         finally:
@@ -256,6 +273,78 @@ class Worker:
             COMMANDS_PROCESSED.labels(
                 command=handler_name, status=status
             ).inc()
+
+    async def _handle_api_exception(
+        self,
+        *,
+        error: SignalAPIError,
+        handler_name: str,
+        trigger: str | None,
+        message: Message,
+        recipient: str | None,
+        queued_message: QueuedMessage | None,
+    ) -> None:
+        metadata = self._build_dlq_metadata(
+            handler_name=handler_name,
+            trigger=trigger,
+            message=message,
+            recipient=recipient,
+        )
+        metadata.update(
+            {
+                "status_code": getattr(error, "status_code", None),
+                "error_type": error.__class__.__name__,
+                "error_message": str(error),
+            }
+        )
+        reason = "api_error"
+        event = "worker.command_api_error"
+        if isinstance(error, RateLimitError):
+            reason = "rate_limited"
+            event = "worker.command_rate_limited"
+        elif isinstance(error, ServerError):
+            reason = "server_error"
+            event = "worker.command_server_error"
+        elif isinstance(error, AuthenticationError):
+            reason = "authentication_error"
+            event = "worker.command_authentication_failed"
+        elif isinstance(error, (InvalidRecipientError, GroupNotFoundError)):
+            reason = "invalid_recipient"
+            event = "worker.command_invalid_recipient"
+
+        self._warn(
+            event,
+            command_name=handler_name,
+            trigger=trigger,
+            status_code=getattr(error, "status_code", None),
+            recipient=recipient,
+            message_id=str(getattr(message, "id", "")),
+        )
+        await self._send_to_dlq(
+            reason=reason,
+            raw=queued_message.raw if queued_message else None,
+            metadata=metadata,
+        )
+        ERRORS_OCCURRED.inc()
+
+    def _build_dlq_metadata(
+        self,
+        *,
+        handler_name: str,
+        trigger: str | None,
+        message: Message,
+        recipient: str | None,
+    ) -> dict[str, object]:
+        return {
+            "command": handler_name,
+            "trigger": trigger,
+            "worker_id": self._worker_id,
+            "shard_id": self._shard_id,
+            "message_id": str(getattr(message, "id", "")),
+            "source": getattr(message, "source", None),
+            "recipient": recipient,
+            "timestamp": getattr(message, "timestamp", None),
+        }
 
     @staticmethod
     def _is_whitelisted(command: Command, context: Context) -> bool:
@@ -297,8 +386,8 @@ class Worker:
                 enqueued_at=queued_message.enqueued_at if queued_message else None,
             )
         except Exception:  # pragma: no cover - defensive
-            log.warning(
-                "worker.checkpoint_failed",
+            self._warn(
+                "worker.checkpoint_failed: Failed to mark checkpoint",
                 source=message.source,
                 timestamp=message.timestamp,
             )
@@ -311,8 +400,8 @@ class Worker:
                 source=message.source, timestamp=message.timestamp
             )
         except Exception:  # pragma: no cover - defensive
-            log.warning(
-                "worker.checkpoint_lookup_failed",
+            self._warn(
+                "worker.checkpoint_lookup_failed: Failed to lookup checkpoint",
                 source=message.source,
                 timestamp=message.timestamp,
             )
@@ -331,8 +420,8 @@ class Worker:
         if metadata:
             payload["metadata"] = metadata
         try:
-            log.warning(
-                "worker.dlq_enqueued",
+            self._warn(
+                "worker.dlq_enqueued: Message enqueued to DLQ",
                 reason=reason,
                 worker_id=self._worker_id,
                 shard_id=self._shard_id,
@@ -341,8 +430,8 @@ class Worker:
             )
             await self._dead_letter_queue.send(payload)
         except Exception:  # pragma: no cover - defensive
-            log.warning(
-                "worker.dlq_send_failed",
+            self._warn(
+                "worker.dlq_send_failed: Failed to send message to DLQ",
                 reason=reason,
                 worker_id=self._worker_id,
             )
@@ -354,11 +443,18 @@ class Worker:
         try:
             ack()
         except Exception:  # pragma: no cover - defensive
-            log.warning(
-                "worker.ack_failed",
+            self._warn(
+                "worker.ack_failed: Failed to acknowledge message",
                 worker_id=self._worker_id,
                 shard_id=self._shard_id,
             )
+
+    def _warn(self, event: str, **kwargs: object) -> None:
+        """Emit warnings defensively in case structlog is minimally configured."""
+        try:
+            log.warning(event, **kwargs)
+        except TypeError:
+            logging.getLogger(__name__).warning("%s %s", event, kwargs)
 
 
 class WorkerPool:
@@ -411,8 +507,10 @@ class WorkerPool:
     def start(self) -> None:
         if self._started.is_set():
             return
+        if self._pool_size <= 0:
+            self._pool_size = 1
         if self._shard_count <= 0:
-            raise ValueError("shard_count must be positive.")
+            self._shard_count = 1
         if self._pool_size < self._shard_count:
             raise ValueError("worker_pool_size must be >= shard_count.")
 
@@ -527,7 +625,7 @@ class WorkerPool:
                 await self._shard_queues[shard_index].put(queued_message)
             except Exception:
                 log.exception(
-                    "worker_pool.shard_enqueue_failed",
+                    "worker_pool.shard_enqueue_failed: Failed to enqueue message to shard",
                     shard_id=shard_index,
                 )
                 try:

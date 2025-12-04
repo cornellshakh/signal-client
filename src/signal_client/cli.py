@@ -9,6 +9,13 @@ from .config import Settings
 
 
 async def _inspect_dlq() -> None:
+    """
+    Asynchronously inspects the Dead Letter Queue (DLQ).
+
+    Initializes the application, retrieves messages from the DLQ if configured,
+    prints them as JSON, and then shuts down the application.
+    Raises RuntimeError if the DLQ is not configured.
+    """
     settings = Settings.from_sources()
     app = Application(settings)
     await app.initialize()
@@ -25,11 +32,23 @@ async def _inspect_dlq() -> None:
 
 
 def inspect_dlq() -> None:
-    """Synchronous entrypoint for inspecting the DLQ (test-friendly)."""
+    """
+    Synchronous entrypoint for inspecting the DLQ.
+
+    This function provides a synchronous wrapper around the asynchronous
+    `_inspect_dlq` function, making it test-friendly and callable from
+    synchronous contexts.
+    """
     asyncio.run(_inspect_dlq())
 
 
 def main() -> None:
+    """
+    Main entry point for the Signal CLI.
+
+    Parses command-line arguments and dispatches to the appropriate
+    sub-command, such as inspecting the Dead Letter Queue.
+    """
     parser = argparse.ArgumentParser(prog="signal-client")
     subparsers = parser.add_subparsers(dest="command")
 

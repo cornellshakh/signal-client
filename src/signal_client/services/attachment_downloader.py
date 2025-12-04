@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 from typing import AsyncIterator, Sequence
 
+from signal_client.exceptions import SignalAPIError
 from signal_client.infrastructure.api_clients.attachments_client import AttachmentsClient
 from signal_client.infrastructure.schemas.message import AttachmentPointer
 
@@ -58,7 +59,15 @@ class AttachmentDownloader:
             for attachment in attachments:
                 if not attachment.id:
                     continue
-                content = await self._attachments_client.get_attachment(attachment.id)
+                try:
+                    content = await self._attachments_client.get_attachment(
+                        attachment.id
+                    )
+                except SignalAPIError as e:
+                    raise AttachmentDownloadError(
+                        f"Failed to download attachment {attachment.id}: {e}"
+                    ) from e
+
                 total_bytes += len(content)
                 if total_bytes > self._max_total_bytes:
                     message = (

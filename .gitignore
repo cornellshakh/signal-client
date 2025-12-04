@@ -1,34 +1,15 @@
-# ==============================================================================
-# General
-#
-# Files that should be ignored in any project, regardless of language or tools.
-# ==============================================================================
-
-# OS-generated files
-# ------------------
-# Ignore OS-specific files from macOS, Windows, and Linux.
-
-# macOS
+# OS
 .DS_Store
 ._*
 .Spotlight-V100
 .Trashes
-
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# Linux
 *~
 
-# Secrets and local configuration
-# -------------------------------
-# Ignore sensitive information and local environment configurations.
-# IMPORTANT: Never commit secrets to version control.
-# Use environment variables or a secure secret management system.
-
+# Secrets / env
 .env
 .env.*
 !.env.example
@@ -37,9 +18,7 @@ $RECYCLE.BIN/
 secrets.yml
 *.log
 
-# VSCode
-# ------
-# Ignore VSCode editor-specific files and settings.
+# Editors
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -47,37 +26,18 @@ secrets.yml
 !.vscode/extensions.json
 .history/
 
-
-# ==============================================================================
 # Python
-#
-# Python-specific files and directories.
-# Based on the official GitHub Python .gitignore template.
-# https://github.com/github/gitignore/blob/main/Python.gitignore
-# ==============================================================================
-
-# Byte-compiled / optimized / DLL files
-# -------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
-# ------------
 *.so
-
-# Virtual environments
-# --------------------
-.env
 .venv
+.env
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
-
-# Test and coverage reports
-# -------------------------
 htmlcov/
 .tox/
 .nox/
@@ -89,30 +49,14 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
-
-# Type checker caches
-# -------------------
 .mypy_cache/
 .pyre/
 .pytype/
-
-# Linters caches
-# --------------
 .pytest_cache/
 .ruff_cache/
-
-# Notebook checkpoints
-# --------------------
 .ipynb_checkpoints
 
-# ==============================================================================
-# Packaging & Distribution
-#
-# Files related to building and distributing the Python package.
-# ==============================================================================
-
-# Build artifacts
-# ---------------
+# Packaging
 .Python
 build/
 develop-eggs/
@@ -132,34 +76,14 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
-# PyInstaller
-# -----------
-# Used for creating standalone executables.
 *.spec
-
-# Installer logs
-# --------------
 pip-log.txt
 pip-delete-this-directory.txt
 
-# ==============================================================================
-# Project Specific
-#
-# Files and directories specific to this project.
-# ==============================================================================
-
-# Custom application files
-# ------------------------
+# Project
 signal-cli-config/
-
-# Documentation build output
-# --------------------------
-# Example for Sphinx or MkDocs. Adjust if you use a different tool.
 site/
 _build/
-
-# Repo management files
 openspec/
 AGENTS.md
 CODEX_PROMPT.md

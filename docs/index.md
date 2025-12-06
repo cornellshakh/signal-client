@@ -31,10 +31,6 @@ description: Async Signal bot runtime with backpressure, typed helpers, and safe
   </div>
 </div>
 
-<div class="cta-strip">
-  <span>Works with <strong>signal-cli-rest-api</strong> (websocket + REST). Keep it private; never expose it to the public internet.</span>
-</div>
-
 ## Quick start (runnable)
 
 Deploy a minimal ping bot. The annotations explain each step.
@@ -70,13 +66,13 @@ Run it with your environment set: `poetry run python examples/ping_bot.py`.
 
 ```mermaid
 flowchart TD
-    A[Signal message] --> B[signal-cli-rest-api]
-    B --> C[signal-client websocket ingest]
-    C --> D{Queue pressure?}
-    D -- yes --> E[DLQ + retry]
-    D -- no --> F[Handler execution]
-    F --> G[Reply / attachment / reaction]
-    F --> H[Metrics + logging]
+    signal[Signal message] --> rest[signal-cli-rest-api]
+    rest --> ingest[signal-client websocket ingest]
+    ingest --> pressure{Queue pressure?}
+    pressure -- yes --> dlq[DLQ and retry]
+    pressure -- no --> handler[Handler execution]
+    handler --> reply[Reply / attachment / reaction]
+    handler --> metrics[Metrics and logging]
 ```
 
 ## Troubleshooting

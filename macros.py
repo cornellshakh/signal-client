@@ -24,7 +24,7 @@ def define_env(env: object) -> None:
     def cta(label: str, url: str, variant: str = "primary") -> str:
         """Render a Material button style link."""
         classes = _button_classes(variant)
-        return f"[{label}]({url}){{ .{classes.replace(' ', ' .')} }}"
+        return f"<a class=\"{classes}\" href=\"{url}\">{label}</a>"
 
     @env.macro  # type: ignore[attr-defined]
     def badge(text: str, tone: str = "beta") -> str:

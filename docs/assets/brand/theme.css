@@ -44,7 +44,7 @@
   padding: 2.5rem;
   margin-bottom: 1.5rem;
   overflow: hidden;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--brand-blue) 16%, transparent), color-mix(in srgb, var(--brand-accent) 12%, transparent)), url("hero-pattern.svg");
+  background: linear-gradient(120deg, color-mix(in srgb, var(--brand-blue) 16%, transparent), color-mix(in srgb, var(--brand-accent) 12%, transparent));
   background-size: cover;
 }
 
@@ -102,8 +102,37 @@
 }
 
 .md-button--secondary {
-  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 45%, transparent);
   color: var(--md-primary-fg-color) !important;
+  background: transparent;
+  box-shadow: 0 4px 16px rgba(15, 29, 48, 0.08);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.md-button--secondary:hover,
+.md-button--secondary:focus-visible {
+  background: color-mix(in srgb, var(--md-primary-fg-color) 12%, var(--md-default-bg-color));
+  box-shadow: 0 16px 42px color-mix(in srgb, var(--md-primary-fg-color) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+.md-button--secondary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--md-primary-fg-color) 70%, transparent);
+  outline-offset: 3px;
+}
+
+.hero .actions .md-button--secondary {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+
+.hero .actions .md-button--secondary:hover,
+.hero .actions .md-button--secondary:focus-visible {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
 }
 
 [data-md-color-scheme="slate"] .md-button--secondary {

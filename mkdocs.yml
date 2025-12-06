@@ -26,9 +26,10 @@ nav:
 theme:
   name: material
   custom_dir: overrides
-  logo: assets/logo.svg
-  favicon: assets/logo.svg
+  logo: assets/brand/logo.svg
+  favicon: assets/brand/favicon.png
   features:
+    - navigation.instant
     - navigation.sections
     - navigation.tabs
     - navigation.top
@@ -36,6 +37,8 @@ theme:
     - navigation.tracking
     - toc.integrate
     - content.code.copy
+    - content.code.annotate
+    - content.code.select
     - content.action.edit
     - content.action.view
     - search.suggest
@@ -51,14 +54,14 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: blue
-      accent: indigo
+      primary: custom
+      accent: custom
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: blue
-      accent: indigo
+      primary: custom
+      accent: custom
   font:
-    text: "Inter"
+    text: "Manrope"
     code: "JetBrains Mono"
   language: en
   icon:
@@ -76,10 +79,6 @@ extra:
   mike:
     canonical_version: latest
     version_selector: true
-  alternate:
-    - name: English
-      link: /
-      lang: en
   meta:
     description: Async Python framework for resilient Signal bots
     keywords: signal, bot, python, async, resilient, signal-cli-rest-api
@@ -87,6 +86,9 @@ extra:
 plugins:
   - search
   - awesome-pages
+  - autorefs
+  - macros:
+      module_name: macros
   - section-index
   - mkdocstrings:
       default_handler: python
@@ -103,11 +105,6 @@ plugins:
       alias_type: symlink
       deploy_prefix: ""
       version_selector: true
-  - i18n:
-      languages:
-        - name: English
-          locale: en
-          default: true
   - redirects:
       redirect_maps:
         brand_voice.md: contributing/docs-authoring.md
@@ -167,7 +164,7 @@ markdown_extensions:
   - pymdownx.tilde
 
 extra_css:
-  - assets/styles/extra.css
+  - assets/brand/theme.css
 
 extra_javascript:
   - https://unpkg.com/mermaid@10.9.1/dist/mermaid.min.js

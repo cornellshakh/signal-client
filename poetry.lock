@@ -1277,6 +1277,18 @@ colorama = ">=0.4"
 pypi = ["pip (>=24.0)", "platformdirs (>=4.2)", "wheel (>=0.42)"]
 
 [[package]]
+name = "hjson"
+version = "3.1.0"
+description = "Hjson, a user interface for JSON."
+optional = false
+python-versions = "*"
+groups = ["dev"]
+files = [
+    {file = "hjson-3.1.0-py3-none-any.whl", hash = "sha256:65713cdcf13214fb554eb8b4ef803419733f4f5e551047c9b711098ab7186b89"},
+    {file = "hjson-3.1.0.tar.gz", hash = "sha256:55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75"},
+]
+
+[[package]]
 name = "htmlmin2"
 version = "0.1.13"
 description = "An HTML Minifier"
@@ -1852,6 +1864,34 @@ files = [
 ]
 
 [[package]]
+name = "mkdocs-macros-plugin"
+version = "1.5.0"
+description = "Unleash the power of MkDocs with macros and variables"
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+files = [
+    {file = "mkdocs_macros_plugin-1.5.0-py3-none-any.whl", hash = "sha256:c10fabd812bf50f9170609d0ed518e54f1f0e12c334ac29141723a83c881dd6f"},
+    {file = "mkdocs_macros_plugin-1.5.0.tar.gz", hash = "sha256:12aa45ce7ecb7a445c66b9f649f3dd05e9b92e8af6bc65e4acd91d26f878c01f"},
+]
+
+[package.dependencies]
+hjson = "*"
+jinja2 = "*"
+mkdocs = ">=0.17"
+packaging = "*"
+pathspec = "*"
+python-dateutil = "*"
+pyyaml = "*"
+requests = "*"
+super-collections = ">=0.6.2"
+termcolor = "*"
+
+[package.extras]
+doc = ["mkdocs-mermaid2-plugin"]
+test = ["mkdocs-d2-plugin", "mkdocs-include-markdown-plugin", "mkdocs-macros-test", "mkdocs-material (>=6.2)", "mkdocs-test (>=0.6.0)", "pytest"]
+
+[[package]]
 name = "mkdocs-material"
 version = "9.7.0"
 description = "Documentation that simply works"
@@ -1963,24 +2003,6 @@ files = [
 
 [package.dependencies]
 mkdocs = ">=1.2"
-
-[[package]]
-name = "mkdocs-static-i18n"
-version = "1.3.0"
-description = "MkDocs i18n plugin using static translation markdown files"
-optional = false
-python-versions = ">=3.8"
-groups = ["dev"]
-files = [
-    {file = "mkdocs_static_i18n-1.3.0-py3-none-any.whl", hash = "sha256:7905d52fff71d2c108b6c344fd223e848ca7e39ddf319b70864dfa47dba85d6b"},
-    {file = "mkdocs_static_i18n-1.3.0.tar.gz", hash = "sha256:65731e1e4ec6d719693e24fee9340f5516460b2b7244d2a89bed4ce3cfa6a173"},
-]
-
-[package.dependencies]
-mkdocs = ">=1.5.2"
-
-[package.extras]
-material = ["mkdocs-material (>=9.2.5)"]
 
 [[package]]
 name = "mkdocstrings"
@@ -3600,6 +3622,39 @@ tests = ["freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=
 typing = ["mypy (>=1.4)", "rich", "twisted"]
 
 [[package]]
+name = "super-collections"
+version = "0.6.2"
+description = "file: README.md"
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+files = [
+    {file = "super_collections-0.6.2-py3-none-any.whl", hash = "sha256:291b74d26299e9051d69ad9d89e61b07b6646f86a57a2f5ab3063d206eee9c56"},
+    {file = "super_collections-0.6.2.tar.gz", hash = "sha256:0c8d8abacd9fad2c7c1c715f036c29f5db213f8cac65f24d45ecba12b4da187a"},
+]
+
+[package.dependencies]
+hjson = "*"
+
+[package.extras]
+test = ["pytest (>=7.0)", "pyyaml", "rich"]
+
+[[package]]
+name = "termcolor"
+version = "3.2.0"
+description = "ANSI color formatting for output in terminal"
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "termcolor-3.2.0-py3-none-any.whl", hash = "sha256:a10343879eba4da819353c55cb8049b0933890c2ebf9ad5d3ecd2bb32ea96ea6"},
+    {file = "termcolor-3.2.0.tar.gz", hash = "sha256:610e6456feec42c4bcd28934a8c87a06c3fa28b01561d46aa09a9881b8622c58"},
+]
+
+[package.extras]
+tests = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "tomli"
 version = "2.3.0"
 description = "A lil' TOML parser"
@@ -4153,4 +4208,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "7977f87ca69c7c6a8005034ff5982df74d45a6f563c684c9016fb73bf8d18d0f"
+content-hash = "5052fd43b193c12d4f8bc4118605b16480b9f2350751f32fd9c04fdaf995c160"

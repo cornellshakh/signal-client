@@ -1,0 +1,24 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">signal-client logo dark</title>
+  <desc id="desc">Chat bubble and ring tuned for dark surfaces.</desc>
+  <defs>
+    <linearGradient id="ring-dark" x1="18" y1="16" x2="114" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8BD4FF"/>
+      <stop offset="1" stop-color="#3A76F0"/>
+    </linearGradient>
+    <linearGradient id="bubble-dark" x1="36" y1="40" x2="106" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1C2C"/>
+      <stop offset="1" stop-color="#0F2940"/>
+    </linearGradient>
+    <filter id="shadow-dark" x="16" y="22" width="96" height="96" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="56" stroke="url(#ring-dark)" stroke-width="10" fill="#0B1C2C"/>
+  <g filter="url(#shadow-dark)">
+    <path d="M40 42c0-6.627 5.373-12 12-12h30c9.941 0 18 8.059 18 18v18c0 9.941-8.059 18-18 18h-14.2c-1.08 0-2.13.43-2.9 1.2l-9.7 9.7c-1.77 1.77-4.8.52-4.8-1.98V90H52c-6.627 0-12-5.373-12-12V42Z" fill="url(#bubble-dark)" stroke="#8BD4FF" stroke-width="2.8"/>
+  </g>
+  <circle cx="82" cy="52" r="4.2" fill="#8BD4FF"/>
+  <circle cx="66" cy="52" r="4.2" fill="#8BD4FF"/>
+  <circle cx="50" cy="52" r="4.2" fill="#8BD4FF"/>
+</svg>

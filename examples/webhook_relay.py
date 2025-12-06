@@ -42,9 +42,9 @@ def _normalize_recipients(raw: object) -> list[str]:
 
 async def main() -> None:
     """Start a small webhook server that relays messages to Signal."""
-    settings = Settings.from_sources()
+    settings = Settings.from_sources()  # (1)
     application = Application(settings)
-    await application.initialize()
+    await application.initialize()  # (2)
     if application.api_clients is None:
         message = "API clients failed to initialize"
         raise RuntimeError(message)
@@ -54,7 +54,7 @@ async def main() -> None:
 
     async def _relay(request: web.Request) -> web.Response:
         try:
-            payload = await request.json()
+            payload = await request.json()  # (3)
         except (json.JSONDecodeError, ContentTypeError):
             return web.json_response({"error": "invalid json body"}, status=400)
 
@@ -68,7 +68,7 @@ async def main() -> None:
             "recipients": recipients,
             "message": message,
         }
-        await application.api_clients.messages.send(send_payload)
+        await application.api_clients.messages.send(send_payload)  # (4)
         return web.json_response({"status": "sent", "recipients": recipients})
 
     web_app = web.Application()
@@ -81,7 +81,7 @@ async def main() -> None:
     runner = web.AppRunner(web_app)
     await runner.setup()
     site = web.TCPSite(runner, "127.0.0.1", 8081)
-    await site.start()
+    await site.start()  # (5)
     print("Webhook relay listening on http://127.0.0.1:8081/relay")
 
     stop_event = asyncio.Event()

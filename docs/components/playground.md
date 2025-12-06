@@ -1,11 +1,20 @@
 ---
 title: Components playground
-description: Quick samples of the authoring components available in our MkDocs setup.
+description: Try the docs components (admonitions, tabs, grids, annotations, macros) enabled in this site.
 ---
 
 # Components playground
 
+Use this page to preview the authoring building blocks before committing them to guides.
+
+## Badges & macros
+
+- Inline badge: {{ badge("Beta") }}
+- Experimental badge: {{ badge("Experimental", "experimental") }}
+- CTA macro: {{ cta("Open API", "../reference/api.md") }}
+
 ## Admonitions
+
 !!! note "PII redaction"
     Incoming messages are redacted by default. Override with caution.
 
@@ -13,6 +22,7 @@ description: Quick samples of the authoring components available in our MkDocs s
     If the inbound queue exceeds the high watermark, new messages are deferred to protect upstream signal-cli.
 
 ## Tabs
+
 === "Local"
     ```bash
     poetry run mkdocs serve
@@ -22,13 +32,22 @@ description: Quick samples of the authoring components available in our MkDocs s
     docker run -it --rm -p 8000:8000 -v $PWD:/docs squidfunk/mkdocs-material
     ```
 
-## Cards
-== Quick links
-* :material-rocket: **Deploy** — see [Operations & Deployment](../guides/production_deployment.md)
-* :material-code-tags: **API reference** — see [API Reference](../reference/api.md)
-* :material-alert-decagram: **Release guardrails** — see [Release & Publishing](../guides/release.md)
+## Cards & grids
+
+<div class="brand-grid">
+  <div class="brand-card">:material-rocket: <strong>Deploy</strong><br/>See [Operations & deployment](../guides/production_deployment.md)</div>
+  <div class="brand-card">:material-code-tags: <strong>API reference</strong><br/>Jump to [API reference](../reference/api.md)</div>
+  <div class="brand-card">:material-alert-decagram: <strong>Release guardrails</strong><br/>Follow [Release & publishing](../guides/release.md)</div>
+</div>
+
+## Annotated code
+
+```python
+--8<-- "examples/ping_bot.py"
+```
 
 ## Diagrams
+
 ```mermaid
 flowchart TD
     A[Signal message] --> B[signal-cli-rest-api]
@@ -39,12 +58,6 @@ flowchart TD
     F --> G[Send reply/attachment]
 ```
 
-## Task lists and badges
-- [x] Backpressure enabled
-- [ ] Custom handler registered
-- [ ] Metrics dashboard linked
-
-Badge example: :material-shield-check: **Resilient path** uses retries + DLQ.
-
 ## Lightbox images
-![Logo](../assets/logo.svg){ data-gallery="assets" }
+
+![Logo](../assets/brand/logo.svg){ data-gallery="assets" }

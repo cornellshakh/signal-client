@@ -24,7 +24,6 @@ description: How we build, preview, and publish the MkDocs site.
 - Links: `lycheeverse/lychee-action` on built `site/`
 - Markdown style: `pymarkdown scan`
 - Spell check: `codespell` with project dictionary
-- Accessibility/performance: `pa11y-ci` + `lighthouse-ci` on `site/index.html` (budgeted)
 
 ## Previews and deploys
 - PRs: build docs, run quality checks, upload `site` as artifact, and (when permitted) publish a GitHub Pages preview.

@@ -1,30 +1,93 @@
 ---
 title: signal-client — Async Python framework for resilient Signal bots
-description: >-
-  Community async bot framework on signal-cli-rest-api with backpressure,
-  typed helpers, and production-ready defaults (not the official Signal app).
+description: Async Signal bot runtime with backpressure, typed helpers, and safety-first defaults (community SDK, not the official Signal app).
 ---
 
-# signal-client — Async Signal bot framework (community SDK, not official Signal)
+<div class="hero">
+  <p class="tagline">{{ brand_tagline }}</p>
+  <img src="assets/brand/wordmark.svg" alt="signal-client wordmark" class="wordmark" />
+  <h1>Async Signal bots, production-ready by default</h1>
+  <p>Build fast on <code>signal-cli-rest-api</code> with typed helpers, resilient ingestion, and observability baked in. Community-driven; not the official Signal app.</p>
+  <div class="actions">
+    {{ cta("Get started", "getting_started.md") }}
+    {{ cta("View API reference", "reference/api.md", "secondary") }}
+  </div>
+</div>
 
-Community-built async framework for Signal bots on top of `signal-cli-rest-api`. It
-provides websocket ingestion with backpressure, typed helpers for
-replies/attachments/reactions, and resilience primitives (durable queues, rate
-limiting, circuit breakers) so bots stay healthy. Defaults favor safety and PII
-redaction; contributors are welcome via issues and PRs.
+## At a glance
 
-## Highlights
+<div class="brand-grid">
+  <div class="brand-card">
+    <strong>Resilience first</strong><br />
+    Backpressure, DLQ retries, and rate/circuit breakers keep handlers stable during bursts.
+  </div>
+  <div class="brand-card">
+    <strong>Typed context helpers</strong><br />
+    Replies, reactions, attachments, locks, and receipts all live on one ergonomic context.
+  </div>
+  <div class="brand-card">
+    <strong>Operations ready</strong><br />
+    Health + metrics servers, structured logging with PII redaction, and storage options (memory, SQLite, Redis).
+  </div>
+</div>
 
-- Websocket ingestion with a worker pool and backpressure controls.
-- Structured logging with optional PII redaction.
-- Typed context helpers for replies, reactions, attachments, and receipts.
-- Resiliency primitives: rate limiting, circuit breakers, durable queues, and a DLQ.
-- Prometheus metrics and optional health endpoints for operations.
+<div class="cta-strip">
+  <span>Works with <strong>signal-cli-rest-api</strong> (websocket + REST). Keep it private; never expose it to the public internet.</span>
+</div>
 
-## Quick links
+## Quick start (runnable)
 
-- [Getting started](getting_started.md) — prerequisites, install, and a minimal bot.
-- [Examples](examples.md) — runnable scripts for ping, reminders, and webhook relay.
-- [Advanced usage](guides/advanced_usage.md) — middleware, context helpers, and locking.
-- [Operations & deployment](guides/production_deployment.md) — configuration, storage, and observability.
-- [Release & publishing](guides/release.md) — quality gates, packaging, and docs publishing.
+Deploy a minimal ping bot. The annotations explain each step.
+
+```python
+import asyncio
+from signal_client import SignalClient, command
+
+
+@command("!ping")
+async def ping(ctx):  # (1)
+    await ctx.reply_text("pong")  # (2)
+
+
+async def main():
+    bot = SignalClient()  # (3)
+    bot.register(ping)    # (4)
+    await bot.start()     # (5)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+1. Commands are declared with the `@command` decorator.
+2. Use typed helpers on `ctx` for replies, reactions, attachments, and receipts.
+3. `SignalClient` wires ingestion, queueing, and backpressure for you.
+4. Register handlers before starting the client.
+5. `start()` connects to `signal-cli-rest-api` over websocket + REST.
+
+Run it with your environment set: `poetry run python examples/ping_bot.py`.
+
+## Message flow
+
+```mermaid
+flowchart TD
+    A[Signal message] --> B[signal-cli-rest-api]
+    B --> C[signal-client websocket ingest]
+    C --> D{Queue pressure?}
+    D -- yes --> E[DLQ + retry]
+    D -- no --> F[Handler execution]
+    F --> G[Reply / attachment / reaction]
+    F --> H[Metrics + logging]
+```
+
+## Troubleshooting
+
+- No replies? Confirm `SIGNAL_SERVICE_URL` matches your websocket host and the bot number is registered.
+- Event loop closed errors? Ensure a single `asyncio.run` entrypoint and avoid running the script twice in the same shell session.
+- Messages slow to drain? Lower `WORKER_SHARD_COUNT` or raise `QUEUE_SIZE` in constrained environments.
+
+## Next steps
+
+- Read [Getting started](getting_started.md) for full setup and health checks.
+- Try more [Examples](examples.md) with annotated snippets pulled from the source.
+- Explore [Advanced usage](guides/advanced_usage.md) for middleware, locks, and observability.
+- Review [Operations & deployment](guides/production_deployment.md) before running in production.

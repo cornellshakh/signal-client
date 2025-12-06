@@ -1,30 +1,39 @@
-# Getting Started
+---
+title: Getting started
+description: Install, configure, and run your first signal-client bot in minutes.
+---
 
-Build a minimal Signal bot with the async `signal-client` runtime.
+# Getting started
+
+Spin up a minimal bot, verify connectivity, and learn the signals to watch.
 
 ## Prerequisites
 
-- A Signal phone number registered with `signal-cli`.
-- A running [`bbernhard/signal-cli-rest-api`](https://github.com/bbernhard/signal-cli-rest-api)
-  instance (websocket + REST). The defaults assume it listens on
-  `http://localhost:8080`.
-- Environment exported for your bot:
+- Signal phone number already registered with `signal-cli`.
+- Running [`bbernhard/signal-cli-rest-api`](https://github.com/bbernhard/signal-cli-rest-api) (websocket + REST) reachable from this host.
+- Python 3.10+ with `poetry` or `pip` available.
+- Export these environment variables before running:
 
-  ```bash
-  export SIGNAL_PHONE_NUMBER=+15551234567
-  export SIGNAL_SERVICE_URL=http://localhost:8080   # websocket host
-  export SIGNAL_API_URL=http://localhost:8080       # REST host
-  ```
+{{ env_block() }}
+
+!!! warning "Private by default"
+    Keep `signal-cli-rest-api` on a private network or localhost. Do not expose it to the public internet.
 
 ## Install
 
-- PyPI: `pip install signal-client`
-- Poetry: `poetry add signal_client`
-- From source: `poetry install`
+=== "Poetry"
+    ```bash
+    poetry add signal_client
+    ```
 
-## Run your first bot
+=== "pip"
+    ```bash
+    python3 -m pip install signal-client
+    ```
 
-Create `ping_bot.py` (or use `examples/ping_bot.py`):
+## Run your first bot (runnable)
+
+Create `examples/ping_bot.py` or reuse the existing file. The callouts show what matters.
 
 ```python
 import asyncio
@@ -32,34 +41,49 @@ from signal_client import SignalClient, command
 
 
 @command("!ping")
-async def ping(ctx):
-    await ctx.reply_text("pong")
+async def ping(ctx):  # (1)
+    await ctx.reply_text("pong")  # (2)
 
 
 async def main():
-    bot = SignalClient()
-    bot.register(ping)
-    await bot.start()
+    bot = SignalClient()  # (3)
+    bot.register(ping)    # (4)
+    await bot.start()     # (5)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+1. Commands are lightweight coroutines; decorators register triggers.
+2. `ctx` exposes typed helpers for replies, reactions, attachments, and receipts.
+3. `SignalClient` wires websocket ingest, queueing, and backpressure controls.
+4. Register handlers before starting the runtime.
+5. `start()` connects to `signal-cli-rest-api` using your exported URLs.
 
-Then run:
+Run it: `poetry run python examples/ping_bot.py`, then send `!ping` from a contact the bot can reach.
 
-```bash
-poetry run python examples/ping_bot.py
+## Health check diagram
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant Bot as signal-client
+    participant API as signal-cli-rest-api
+    You->>Bot: !ping
+    Bot->>API: Websocket receive
+    Bot-->>Bot: Queue + worker pool
+    Bot->>API: REST reply "pong"
+    API-->>You: Message delivered
 ```
 
-Send `!ping` from a contact or group that the configured number can reach; the
-bot replies with `pong`.
+## Troubleshooting
+
+- **No websocket events:** double-check `SIGNAL_SERVICE_URL` and that the bot number is registered on `signal-cli`.
+- **Replies hang:** verify outbound REST at `SIGNAL_API_URL` is reachable and not blocked by a proxy/firewall.
+- **Unicode errors on Windows shells:** ensure `.venv` encoding is UTF-8 or run via `poetry run python ...` inside a UTF-8 terminal.
 
 ## Next steps
 
-- Try the [reminder](examples.md#reminder-bot) and
-  [webhook relay](examples.md#webhook-relay) samples.
-- Review [advanced usage](guides/advanced_usage.md) for middleware, attachments,
-  and reactions.
-- See [operations](guides/production_deployment.md) for storage, DLQ, and
-  observability options.
+- Explore [Examples](examples.md) for runnable bots with annotated snippets.
+- Layer in middleware and locks in [Advanced usage](guides/advanced_usage.md).
+- Prepare for production with [Operations & deployment](guides/production_deployment.md).

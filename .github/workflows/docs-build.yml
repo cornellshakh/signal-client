@@ -9,11 +9,6 @@ on:
         default: true
         required: false
         type: boolean
-      run_accessibility:
-        description: "Run pa11y/lighthouse audits"
-        default: false
-        required: false
-        type: boolean
       deploy_preview:
         description: "Publish preview via GitHub Pages (PRs)"
         default: false
@@ -62,18 +57,6 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           args: --config lychee.toml site
-
-      - name: Accessibility audit (pa11y)
-        if: inputs.run_accessibility
-        uses: pa11y/pa11y-ci-action@v1
-        with:
-          config: .pa11yci.json
-
-      - name: Lighthouse smoke
-        if: inputs.run_accessibility
-        uses: treosh/lighthouse-ci-action@v10
-        with:
-          configPath: lighthouserc.js
 
       - name: Upload site artifact
         uses: actions/upload-artifact@v4

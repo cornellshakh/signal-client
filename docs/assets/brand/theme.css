@@ -1,0 +1,220 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --brand-blue: #3a76f0;
+  --brand-blue-2: #5aa4ff;
+  --brand-accent: #8bd4ff;
+  --brand-navy: #0b1c2c;
+  --brand-ink: #0f1d30;
+  --brand-surface: #f7f9fd;
+
+  --md-primary-fg-color: var(--brand-blue);
+  --md-primary-fg-color--light: #6ba5ff;
+  --md-primary-fg-color--dark: #245bb6;
+  --md-accent-fg-color: var(--brand-accent);
+  --md-text-font: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --md-code-font: "JetBrains Mono", SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #ffffff;
+  --md-default-fg-color: var(--brand-ink);
+  --md-default-fg-color--light: #354963;
+  --md-typeset-a-color: var(--brand-blue);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #0b1c2c;
+  --md-default-fg-color: #e4ecf7;
+  --md-default-fg-color--light: #c6d4e9;
+  --md-typeset-a-color: var(--brand-accent);
+  --md-code-bg-color: rgba(255, 255, 255, 0.04);
+}
+
+.md-header {
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--md-default-bg-color) 90%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 12%, transparent);
+}
+
+.hero {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 12%, transparent);
+  border-radius: 18px;
+  padding: 2.5rem;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--brand-blue) 16%, transparent), color-mix(in srgb, var(--brand-accent) 12%, transparent)), url("hero-pattern.svg");
+  background-size: cover;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 10%, color-mix(in srgb, var(--brand-accent) 30%, transparent), transparent 45%),
+    radial-gradient(circle at 75% 50%, color-mix(in srgb, var(--brand-blue) 24%, transparent), transparent 46%);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.hero h1,
+.hero p {
+  position: relative;
+  z-index: 1;
+}
+
+.hero .tagline {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--brand-ink);
+}
+
+[data-md-color-scheme="slate"] .hero .tagline {
+  background: rgba(11, 28, 44, 0.75);
+  color: #dfe9fb;
+}
+
+.hero .actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  position: relative;
+  z-index: 1;
+}
+
+.md-button--primary {
+  background: linear-gradient(135deg, var(--brand-blue), var(--brand-blue-2));
+  border: none;
+  color: #fff !important;
+  box-shadow: 0 12px 30px rgba(58, 118, 240, 0.28);
+}
+
+.md-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(58, 118, 240, 0.35);
+}
+
+.md-button--secondary {
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 30%, transparent);
+  color: var(--md-primary-fg-color) !important;
+}
+
+[data-md-color-scheme="slate"] .md-button--secondary {
+  color: var(--brand-accent) !important;
+  border-color: color-mix(in srgb, var(--brand-accent) 50%, transparent);
+}
+
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.brand-card {
+  border: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 14%, transparent);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  background: color-mix(in srgb, var(--md-default-bg-color) 90%, var(--brand-surface) 10%);
+}
+
+[data-md-color-scheme="slate"] .brand-card {
+  background: color-mix(in srgb, var(--md-default-bg-color) 80%, rgba(255, 255, 255, 0.04));
+}
+
+.cta-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 25%, transparent);
+  background: color-mix(in srgb, var(--brand-accent) 10%, var(--md-default-bg-color) 90%);
+}
+
+[data-md-color-scheme="slate"] .cta-strip {
+  background: color-mix(in srgb, var(--brand-accent) 12%, rgba(11, 28, 44, 0.92));
+}
+
+.table-compact table {
+  font-size: 0.95rem;
+}
+
+.md-typeset .admonition > .admonition-title {
+  font-weight: 700;
+}
+
+.md-typeset code span[data-annotate] {
+  font-weight: 700;
+  color: var(--brand-blue);
+}
+
+.md-typeset .annotation {
+  color: var(--md-default-fg-color--light);
+}
+
+.callout-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+  padding-left: 1.1rem;
+}
+
+.playground-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.badge--beta {
+  background: color-mix(in srgb, var(--brand-blue) 18%, transparent);
+  color: var(--brand-ink);
+}
+
+[data-md-color-scheme="slate"] .badge--beta {
+  color: #dceafd;
+}
+
+.badge--experimental {
+  background: color-mix(in srgb, var(--brand-accent) 16%, transparent);
+  color: var(--brand-ink);
+}
+
+[data-md-color-scheme="slate"] .badge--experimental {
+  color: #e4f5ff;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.docs-table th,
+.docs-table td {
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--md-primary-fg-color) 12%, transparent);
+}
+
+.hero img.wordmark {
+  max-width: 220px;
+  margin: 0.4rem 0 0.8rem;
+  position: relative;
+  z-index: 1;
+}

@@ -1,0 +1,24 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">signal-client logo</title>
+  <desc id="desc">Rounded chat bubble inside a blue ring inspired by Signal colors.</desc>
+  <defs>
+    <linearGradient id="ring" x1="12" y1="20" x2="116" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3A76F0"/>
+      <stop offset="1" stop-color="#5AA4FF"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="32" y1="36" x2="108" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#E8F2FF" stop-opacity="0.96"/>
+    </linearGradient>
+    <filter id="shadow" x="18" y="26" width="94" height="92" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0B1C2C" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="56" stroke="url(#ring)" stroke-width="10" fill="#0B1C2C" fill-opacity="0.04" />
+  <g filter="url(#shadow)">
+    <path d="M40 42c0-6.627 5.373-12 12-12h30c9.941 0 18 8.059 18 18v18c0 9.941-8.059 18-18 18h-14.2c-1.08 0-2.13.43-2.9 1.2l-9.7 9.7c-1.77 1.77-4.8.52-4.8-1.98V90H52c-6.627 0-12-5.373-12-12V42Z" fill="url(#bubble)" stroke="#3A76F0" stroke-width="2.8"/>
+  </g>
+  <circle cx="82" cy="52" r="4.2" fill="#3A76F0"/>
+  <circle cx="66" cy="52" r="4.2" fill="#3A76F0"/>
+  <circle cx="50" cy="52" r="4.2" fill="#3A76F0"/>
+</svg>

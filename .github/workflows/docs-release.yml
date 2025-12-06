@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: write
-  pages: read
+  pages: write
   id-token: write
 
 concurrency:
@@ -18,6 +18,10 @@ concurrency:
 
 jobs:
   quality:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     uses: ./.github/workflows/docs-build.yml
     with:
       run_link_checks: true

@@ -15,12 +15,12 @@ from signal_client.adapters.storage.redis import RedisStorage
 @pytest.fixture
 def redis_storage(mocker: MockerFixture) -> RedisStorage:
     """Return a RedisStorage instance with a mocked redis client."""
-    mocker.patch("redis.asyncio.Redis", autospec=True)
-    # mock_instance = mock_redis_class.return_value
-    # mock_instance.rpush = AsyncMock()
-    # mock_instance.lrange = AsyncMock()
-    # mock_instance.delete = AsyncMock()
-    # mock_instance.close = AsyncMock()
+    mock_redis_class = mocker.patch("redis.asyncio.Redis", autospec=True)
+    mock_instance = mock_redis_class.return_value
+    mock_instance.rpush = AsyncMock()
+    mock_instance.lrange = AsyncMock()
+    mock_instance.delete = AsyncMock()
+    mock_instance.close = AsyncMock()
 
     return RedisStorage(host="localhost", port=6379)
 

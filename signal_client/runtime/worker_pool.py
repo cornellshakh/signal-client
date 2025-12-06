@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import cast
 from zlib import crc32
 
+import logging
 import structlog
 
 from signal_client.adapters.api.schemas.message import Message
@@ -42,7 +43,7 @@ from signal_client.runtime.services.dead_letter_queue import DeadLetterQueue
 from signal_client.runtime.services.lock_manager import LockManager
 from signal_client.runtime.services.message_parser import MessageParser
 
-log = structlog.get_logger()
+log = logging.getLogger(__name__)
 
 MiddlewareCallable = Callable[
     [Context, Callable[[Context], Awaitable[None]]], Awaitable[None]
@@ -469,10 +470,7 @@ class Worker:
 
     def _warn(self, event: str, **kwargs: object) -> None:
         """Emit warnings defensively in case structlog is minimally configured."""
-        try:
-            log.warning(event, **kwargs)
-        except TypeError:
-            log.warning("worker.warn: %s %s", event, kwargs)
+        log.warning("%s %s", event, kwargs)
 
 
 class WorkerPool:

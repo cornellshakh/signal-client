@@ -1,6 +1,7 @@
 from .accounts_client import AccountsClient
 from .attachments_client import AttachmentsClient
-from .base_client import BaseClient, ClientConfig, HeaderProvider, RequestOptions
+from .base_client import BaseClient, ClientConfig, HeaderProvider
+from .request_options import RequestOptions
 from .contacts_client import ContactsClient
 from .devices_client import DevicesClient
 from .general_client import GeneralClient

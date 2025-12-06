@@ -21,6 +21,7 @@ from signal_client.core.exceptions import (
     SignalAPIError,
 )
 from signal_client.observability.metrics import API_CLIENT_PERFORMANCE
+from .request_options import RequestOptions
 
 if TYPE_CHECKING:
     from signal_client.runtime.services.circuit_breaker import CircuitBreaker
@@ -39,28 +40,6 @@ log = structlog.get_logger()
 
 
 HeaderProvider = Callable[[str, str], Awaitable[Mapping[str, str]] | Mapping[str, str]]
-
-
-@dataclass(slots=True)
-class RequestOptions:
-    """Optional parameters to customize a single API request.
-
-    These options override the default client configuration for a specific request.
-
-    Attributes:
-        timeout: Request timeout in seconds.
-        retries: Number of retries for this request.
-        backoff_factor: Factor for exponential backoff between retries.
-        idempotency_key: A unique key for idempotent requests.
-        headers: Additional headers for this request.
-
-    """
-
-    timeout: float | None = None
-    retries: int | None = None
-    backoff_factor: float | None = None
-    idempotency_key: str | None = None
-    headers: Mapping[str, str] | None = None
 
 
 @dataclass

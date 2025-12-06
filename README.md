@@ -1,6 +1,11 @@
-# signal-client
+# signal-client — Async Signal bot framework
 
-Python framework for building Signal bots with async primitives, resilient message handling, and typed API clients.
+[![PyPI version](https://img.shields.io/pypi/v/signal-client)](https://pypi.org/project/signal-client/)
+[![Python versions](https://img.shields.io/pypi/pyversions/signal-client)](https://pypi.org/project/signal-client/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://cornellsh.github.io/signal-client/)
+
+Async framework for Signal bots on top of `signal-cli-rest-api`. Provides websocket ingestion with backpressure, typed helpers for replies/attachments/reactions, and resilience primitives (durable queues, rate limiting, circuit breakers) so bots stay healthy. Defaults favor safety and PII redaction; contributors are welcome via issues and PRs.
 
 ## Prerequisites
 
@@ -58,7 +63,6 @@ Python framework for building Signal bots with async primitives, resilient messa
 
 - Public site: https://cornellsh.github.io/signal-client/
 - Local preview: `poetry run mkdocs serve`
-- Examples: see `examples/README.md`
 
 ## Development
 

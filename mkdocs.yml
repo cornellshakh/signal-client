@@ -13,3 +13,6 @@ nav:
     - Advanced Usage: guides/advanced_usage.md
     - Operations & Deployment: guides/production_deployment.md
     - Release & Publishing: guides/release.md
+  - Branding:
+    - Brand Voice: brand_voice.md
+    - Naming Rationale: branding.md

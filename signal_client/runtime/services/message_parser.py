@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Any
 
-import structlog
 from pydantic import ValidationError
 
 from signal_client.adapters.api.schemas.events import (
@@ -21,7 +21,7 @@ from signal_client.adapters.api.schemas.events import (
 )
 from signal_client.adapters.api.schemas.message import Message, MessageType
 
-log = structlog.get_logger()
+log = logging.getLogger(__name__)
 
 
 class MessageParser:

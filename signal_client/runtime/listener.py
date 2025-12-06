@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 from enum import Enum
-
-import structlog
 
 from signal_client.adapters.transport.websocket_client import WebSocketClient
 from signal_client.observability.metrics import MESSAGE_QUEUE_DEPTH
@@ -14,7 +13,7 @@ from signal_client.runtime.services.dead_letter_queue import DeadLetterQueue
 from signal_client.runtime.services.intake_controller import IntakeController
 from signal_client.runtime.services.persistent_queue import PersistentQueue
 
-log = structlog.get_logger()
+log = logging.getLogger(__name__)
 
 
 class BackpressurePolicy(str, Enum):
@@ -45,7 +44,7 @@ class MessageService:
         self._intake_controller = intake_controller
         self._enqueue_timeout = max(0.0, enqueue_timeout)
         self._backpressure_policy = backpressure_policy
-        self._logger = structlog.get_logger()
+        self._logger = logging.getLogger(__name__)
 
     def set_websocket_client(self, websocket_client: WebSocketClient) -> None:
         """Swap websocket client (primarily for tests)."""
@@ -142,11 +141,8 @@ class MessageService:
         MESSAGE_QUEUE_DEPTH.set(self._queue.qsize())
 
     def _warn(self, event: str, **kwargs: object) -> None:
-        """Emit warnings defensively in case structlog is minimally configured."""
-        try:
-            self._logger.warning(event, **kwargs)
-        except TypeError:
-            self._logger.warning("message_service.warn: %s %s", event, kwargs)
+        """Emit warnings defensively when backpressure handling triggers."""
+        self._logger.warning("%s %s", event, kwargs)
 
 
 __all__ = ["BackpressurePolicy", "MessageService"]

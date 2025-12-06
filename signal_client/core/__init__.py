@@ -3,8 +3,6 @@
 from .command import Command, CommandError, CommandMetadata, command
 from .compatibility import check_supported_versions
 from .config import Settings
-from .context import Context
-from .context_deps import ContextDependencies
 from .exceptions import (
     AuthenticationError,
     GroupNotFoundError,
@@ -32,3 +30,11 @@ __all__ = [
     "check_supported_versions",
     "command",
 ]
+
+
+def __getattr__(name):
+    if name in {"Context", "ContextDependencies"}:
+        from . import context as _context
+
+        return getattr(_context, name)
+    raise AttributeError(f"module 'signal_client.core' has no attribute {name}")

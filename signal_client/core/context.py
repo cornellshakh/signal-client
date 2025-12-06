@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from signal_client.adapters.api.base_client import RequestOptions
+from signal_client.adapters.api.request_options import RequestOptions
 from signal_client.adapters.api.schemas.link_preview import LinkPreview
 from signal_client.adapters.api.schemas.message import AttachmentPointer, Message
 from signal_client.adapters.api.schemas.reactions import ReactionRequest

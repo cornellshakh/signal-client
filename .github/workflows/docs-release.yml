@@ -23,8 +23,6 @@ jobs:
       run_link_checks: true
       run_accessibility: true
       deploy_preview: false
-    secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     needs: quality

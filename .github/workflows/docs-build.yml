@@ -19,10 +19,6 @@ on:
         default: false
         required: false
         type: boolean
-    secrets:
-      github_token:
-        description: "GitHub token for Pages"
-        required: false
 
 permissions:
   contents: read

@@ -21,7 +21,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-packages = [{include = "signal_client", from = "src"}]
+packages = [{include = "signal_client"}]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/cornellsh/signal_client/issues"
@@ -63,10 +63,10 @@ mkdocs-material = "^9.7.0"
 mkdocstrings = "^1.0.0"
 
 [tool.poetry.scripts]
-audit-api = "scripts.audit_api:main"
-inspect-dlq = "signal_client.cli:main"
-pytest-safe = "scripts.run_tests:main"
-release-guard = "scripts.release_guard:main"
+audit-api = "tools.audit_api:main"
+inspect-dlq = "signal_client.app.cli:main"
+pytest-safe = "tools.run_tests:main"
+release-guard = "tools.release_guard:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -82,6 +82,15 @@ ignore = [
   "TC001", # Move application import into a type-checking block
   "TC002", # Move third-party import into a type-checking block
   "TC003", # Move standard library import into a type-checking block
+  "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public method
+  "D103", # Missing docstring in public function
+  "D104", # Missing docstring in public package
+  "D107", # Missing docstring in __init__
+  "D400", # First line should end with a period
+  "D401", # First line of docstring should be in imperative mood
+  "D415", # First line should end with proper punctuation
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -140,4 +149,4 @@ build_command = "poetry build"
 [tool.mypy]
 ignore_missing_imports = true
 explicit_package_bases = true
-files = ["src"]
+files = ["signal_client", "tools"]

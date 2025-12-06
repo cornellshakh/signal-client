@@ -1,3 +1,5 @@
+"""Pytest fixtures for Signal client tests."""
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, Iterator
@@ -7,8 +9,9 @@ from unittest.mock import AsyncMock
 import pytest
 
 from signal_client import SignalClient
-from signal_client.context import Context
-from signal_client.context_deps import ContextDependencies
+from signal_client.adapters.api.schemas.message import Message
+from signal_client.core.context import Context
+from signal_client.core.context_deps import ContextDependencies
 
 
 @pytest.fixture
@@ -54,7 +57,8 @@ async def bot(mock_env_vars: None) -> AsyncGenerator[SignalClient, None]:
     api_clients.receipts = AsyncMock()
     api_clients.search = AsyncMock()
     api_clients.sticker_packs = AsyncMock()
-    assert bot.app.lock_manager is not None
+    if bot.app.lock_manager is None:
+        raise RuntimeError("Lock manager not initialized")
     bot.app.context_dependencies = ContextDependencies(
         accounts_client=api_clients.accounts,
         attachments_client=api_clients.attachments,
@@ -73,14 +77,11 @@ async def bot(mock_env_vars: None) -> AsyncGenerator[SignalClient, None]:
         phone_number=bot.settings.phone_number,
         settings=bot.settings,
     )
-    from signal_client.infrastructure.schemas.message import Message
 
     def _context_factory(message: Message) -> Context:
         if bot.app.context_dependencies is None:
             raise RuntimeError("Context dependencies not initialized")
-        return Context(
-            message=message, dependencies=bot.app.context_dependencies
-        )
+        return Context(message=message, dependencies=bot.app.context_dependencies)
 
     bot.app.context_factory = _context_factory
     if bot.app.worker_pool is not None:
@@ -92,7 +93,8 @@ async def bot(mock_env_vars: None) -> AsyncGenerator[SignalClient, None]:
 @pytest.fixture
 def context_dependencies(bot: SignalClient) -> ContextDependencies:
     """Build ContextDependencies once so tests don't need to duplicate wiring."""
-    assert bot.app.lock_manager is not None
+    if bot.app.lock_manager is None:
+        raise RuntimeError("Lock manager not initialized")
     return ContextDependencies(
         accounts_client=bot.api_clients.accounts,
         attachments_client=bot.api_clients.attachments,

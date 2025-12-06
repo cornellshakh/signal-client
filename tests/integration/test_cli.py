@@ -1,3 +1,5 @@
+"""Integration tests for the CLI."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,12 +8,13 @@ import json
 import pytest
 
 from signal_client.app import Application
-from signal_client.cli import inspect_dlq
-from signal_client.config import Settings
+from signal_client.app.cli import inspect_dlq
+from signal_client.core.config import Settings
 
 
 @pytest.fixture(autouse=True)
 def override_application(monkeypatch):
+    """Override the application for CLI tests."""
     settings = Settings.from_sources(
         config={
             "phone_number": "+1234567890",
@@ -24,8 +27,8 @@ def override_application(monkeypatch):
     app = Application(settings)
     asyncio.run(app.initialize())
 
-    monkeypatch.setattr("signal_client.cli.Settings.from_sources", lambda: settings)
-    monkeypatch.setattr("signal_client.cli.Application", lambda _settings: app)
+    monkeypatch.setattr("signal_client.app.cli.Settings.from_sources", lambda: settings)
+    monkeypatch.setattr("signal_client.app.cli.Application", lambda _settings: app)
 
     yield app
 
@@ -33,6 +36,7 @@ def override_application(monkeypatch):
 
 
 def test_inspect_dlq_outputs_messages(capfd, override_application):
+    """Test that inspect_dlq command outputs messages correctly."""
     app = override_application
     dlq = app.dead_letter_queue
 

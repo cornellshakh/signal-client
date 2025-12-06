@@ -1,15 +1,18 @@
+"""Integration tests for storage backends."""
+
 from __future__ import annotations
 
 import pytest
 
+from signal_client.adapters.storage.redis import RedisStorage
+from signal_client.adapters.storage.sqlite import SQLiteStorage
 from signal_client.app import Application
-from signal_client.config import Settings
-from signal_client.storage.redis import RedisStorage
-from signal_client.storage.sqlite import SQLiteStorage
+from signal_client.core.config import Settings
 
 
 @pytest.mark.asyncio
 async def test_sqlite_storage_integration(tmp_path):
+    """Test SQLite storage integration."""
     database_path = tmp_path / "test.db"
     storage = SQLiteStorage(database=str(database_path))
 
@@ -27,6 +30,7 @@ async def test_sqlite_storage_integration(tmp_path):
 
 @pytest.mark.asyncio
 async def test_application_sqlite_configuration(tmp_path):
+    """Test application with SQLite storage configuration."""
     config = {
         "phone_number": "+1234567890",
         "signal_service": "localhost:8080",
@@ -49,6 +53,8 @@ async def test_application_sqlite_configuration(tmp_path):
 
 @pytest.mark.asyncio
 async def test_application_redis_configuration(monkeypatch):
+    """Test application with Redis storage configuration."""
+
     class FakeRedis:
         def __init__(self, *_, **__):
             self._data: dict[str, list[bytes]] = {}

@@ -31,7 +31,7 @@ LOG_REDACTION_ENABLED=true
 
 ## Health and metrics
 - Health endpoints: `HealthServer` exposes `/live`, `/ready`, and `/dlq` (choose a port like `8082`).
-- Metrics: `signal_client.metrics_server.start_metrics_server(port=8000)` publishes Prometheus metrics for websocket connectivity, queue depth, DLQ, and command latency.
+- Metrics: `signal_client.observability.metrics_server.start_metrics_server(port=8000)` publishes Prometheus metrics for websocket connectivity, queue depth, DLQ, and command latency.
 
 ## Running the process
 - Package or install the project (`pip install signal-client` or `poetry install`) and run your bot entrypoint with a process manager (systemd, supervisord, Docker).

@@ -1,14 +1,17 @@
+"""Integration tests for the LockManager."""
+
 from __future__ import annotations
 
 import asyncio
 
 import pytest
 
-from signal_client.services.lock_manager import LockManager
+from signal_client.runtime.services.lock_manager import LockManager
 
 
 @pytest.mark.asyncio
 async def test_lock_manager_serializes_access():
+    """Test that the LockManager serializes access to a resource."""
     manager = LockManager()
     events: list[str] = []
 

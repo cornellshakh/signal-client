@@ -1,3 +1,5 @@
+"""Tests for the CircuitBreaker service."""
+
 from __future__ import annotations
 
 import asyncio
@@ -5,11 +7,15 @@ import asyncio
 import pytest
 
 from signal_client.observability.metrics import CIRCUIT_BREAKER_STATE
-from signal_client.services.circuit_breaker import CircuitBreaker, CircuitBreakerState
+from signal_client.runtime.services.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerState,
+)
 
 
 @pytest.mark.asyncio
 async def test_circuit_breaker_trips_after_failures(monkeypatch):
+    """Test that the circuit breaker trips after a specified number of failures."""
     breaker = CircuitBreaker(
         failure_threshold=2,
         reset_timeout=1,
@@ -51,6 +57,7 @@ async def test_circuit_breaker_trips_after_failures(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_circuit_breaker_notifies_state_listeners():
+    """Test that the circuit breaker notifies registered state listeners."""
     breaker = CircuitBreaker(
         failure_threshold=1,
         reset_timeout=1,

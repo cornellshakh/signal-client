@@ -23,7 +23,7 @@ from collections.abc import Iterable
 from aiohttp import ContentTypeError, web
 
 from signal_client.app import Application
-from signal_client.config import Settings
+from signal_client.core.config import Settings
 
 
 def _normalize_recipients(raw: object) -> list[str]:

@@ -6,25 +6,24 @@ Practical patterns for richer bots, middleware, and operations.
 - Use `@command` to declare triggers. Strings are matched case-insensitively by default; pass `case_sensitive=True` or regex patterns for stricter routing.
 - `whitelisted=["+15551234567"]` restricts who can run a command.
 - Register commands on the client before calling `start()`:
-  ```python
-  from signal_client import SignalClient, command
+```python
+from signal_client import SignalClient, command
 
-  bot = SignalClient()
+bot = SignalClient()
 
-  @command(r"^!echo\\s+(.+)$", case_sensitive=False)
-  async def echo(ctx):
-      await ctx.reply_text(ctx.message.message or "")
+@command(r"^!echo\\s+(.+)$", case_sensitive=False)
+async def echo(ctx):
+    await ctx.reply_text(ctx.message.message or "")
 
-  bot.register(echo)
-  ```
+bot.register(echo)
+```
 
 ## Middleware
 Wrap command execution with cross-cutting concerns such as logging, auth, or rate limiting:
 
 ```python
 from collections.abc import Awaitable, Callable
-from signal_client import SignalClient
-from signal_client.context import Context
+from signal_client import Context, SignalClient
 
 client = SignalClient()
 
@@ -55,13 +54,13 @@ Every command receives a `Context` with typed helpers:
 ## Health and metrics
 - Start a basic health server to expose `/live`, `/ready`, and `/dlq`:
   ```python
-  from signal_client.health_server import start_health_server
+  from signal_client.observability.health_server import start_health_server
 
   app = client.app  # after initialization
   await app.initialize()
   await start_health_server(app, port=8082)
   ```
-- Export Prometheus metrics with `signal_client.metrics_server.start_metrics_server(port=8000)`.
+- Export Prometheus metrics with `signal_client.observability.metrics_server.start_metrics_server(port=8000)`.
 
 ---
 
@@ -125,8 +124,8 @@ Leverage Python's `asyncio` for concurrent operations when making multiple API c
 
 ```python
 import asyncio
-from signal_client.infrastructure.api_clients.contacts_client import ContactsClient
-from signal_client.infrastructure.api_clients.messages_client import MessagesClient
+from signal_client.adapters.api.contacts_client import ContactsClient
+from signal_client.adapters.api.messages_client import MessagesClient
 
 async def fetch_contacts_and_send_messages(base_url: str, phone_number: str):
     contacts_client = ContactsClient(base_url=base_url)
